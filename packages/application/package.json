@@ -1,0 +1,10 @@
+{
+  "name": "@certibuy/application",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Use-cases: commands, read models, jobs, policies and notify(). No Next.js or Supabase imports.",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

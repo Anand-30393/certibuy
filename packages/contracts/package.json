@@ -1,0 +1,10 @@
+{
+  "name": "@certibuy/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Zod schemas for every command and view, enums, and status labels and tones.",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

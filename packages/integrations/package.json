@@ -1,0 +1,10 @@
+{
+  "name": "@certibuy/integrations",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ports and simulated adapters (payments, payouts, courier, grading, IMEI, mail) plus the Supabase auth and storage adapters.",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

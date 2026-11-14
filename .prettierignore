@@ -1,0 +1,12 @@
+# Existing documentation is maintained by hand — never reformat it.
+docs/
+CLAUDE.md
+*.md
+*.txt
+
+# Generated and installed files
+node_modules/
+pnpm-lock.yaml
+.next/
+dist/
+coverage/

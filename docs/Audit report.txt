@@ -1,0 +1,279 @@
+#CertiBuy — Implementation Audit
+
+**Audited:** 13 November 2026 · **Build:** the shipped application and its seeded demo dataset.
+**Scope:** every route, server module, backend function, entity, shared domain module, integration call and Markdown file in the repository.
+**Purpose:** an accurate, evidence-based record of what exists **today**, as the baseline for a rebuild on another stack.
+
+Status vocabulary used throughout: **Implemented** (a real user can complete it end to end, server-authoritative) · **Partial** (present but with a stated gap) · **Simulated** (the flow exists, the external effect is faked) · **Not implemented**.
+
+---
+
+## 1. Method and evidence
+
+| Evidence | Count |
+| --- | --- |
+| Route files | 56 (44 user-facing screens + 6 layouts + 5 auth pages + 1 API route) |
+| Backend command functions | 25 |
+| Server read models / form actions | 36 server functions + 7 client query hooks |
+| Entities (tables) | 21 |
+| Shared domain modules | 6 (`pricing`, `offer`, `inspection`, `lifecycle`, `custody`, `returns`) |
+| Client libraries | 30 modules under `src/lib` |
+| Components | ~150, grouped by area |
+| Documentation files | 12 under `CertiBuy/docs` + `CertiBuy/CLAUDE.md` |
+| Live records | Settings 1 · DeviceModel 102 · LiquidityScore 268 · Hub 3 · Submission 37 · Offer 32 · GradeAssessment 62 · InspectionReport 9 · Booking 12 · Device 30 · Listing 29 · Order 7 · EscrowTransaction 10 · Payout 51 · ReturnRequest 1 · ExceptionCase 5 · Notification 46 · ActivityLog 28 · SupportRequest 0 · BlacklistedImei 1 |
+
+The application is fully seeded and every journey below was traced through the code that governs it (command → domain module → entity write → notification), not inferred from screen copy.
+
+## 2. Executive summary
+
+- **The custody-first marketplace is real.** Selling, grading, counter inspection, handover, listing, browsing, checkout, escrow bookkeeping, returns, payouts-ledger, liquidity, ladder ageing, exceptions and the ops console are all implemented with server-side rules.
+- **Every money *movement* is simulated.** No payment gateway, no bank-transfer rail and no courier API are connected. The ledger, prices, fees and state machines are genuine; the rupees do not move.
+- **The "AI" grade is a deterministic rule engine**, not a vision model. It is reproducible and explainable, and it never prices anything.
+- **Roles are three, not four.** Seller and buyer are one `customer` account with `active_mode`; technician and ops are staff; platform `admin` is a superset.
+- **19 divergences from the proposal** are itemised in §9 — the material ones are: no buyer order cancellation, no seller-cancellation fee, grade D never listed, support requests with no ops inbox, metric set different from the documented one, and two inconsistent `floor_price` definitions.
+
+| Area | Status |
+| --- | --- |
+| Seller submission → offer → booking | Implemented |
+| Automatic grading (AI) | Simulated (deterministic engine, no vision model) |
+| Diagnostic device check | Simulated (seller-declared answers, animated "scan") |
+| Instant Cash eligibility | Implemented |
+| Sell For More (50 % advance + day-21 balance) | Implemented |
+| Counter inspection, grade, mismatch, handover | Implemented |
+| Inventory, custody, price ladder, day-45 review | Implemented |
+| Liquidity scoring | Implemented (with a proxy demand input — §9 F17) |
+| Buyer browse → checkout → escrow hold | Implemented (payment itself simulated) |
+| Shipment tracking | Simulated (states advanced manually) |
+| Returns, refunds, replacement | Implemented (refund is ledger-only) |
+| Payouts | Simulated rail, real ledger |
+| Ops console (overview, alerts, catalogue, pricing, liquidity, inventory, exceptions, hubs, users, metrics, demo) | Implemented |
+| Notifications (in-app) | Implemented |
+| Notification email | Implemented, limited (registered users, fixed base URL) |
+| Customer care | Partial (record + email, no ops inbox) |
+| User invitations | Not implemented in-app |
+| Buyer order cancellation | Not implemented |
+| Real integrations (payments, payouts, courier, bank verification) | Not implemented |
+
+## 3. Roles as they actually exist
+
+| Persona (proposal) | Account reality | Permission key |
+| --- | --- | --- |
+| Seller | `customer` with `active_mode = "seller"` | `app_role = customer` |
+| Buyer | `customer` with `active_mode = "buyer"` | `app_role = customer` |
+| Inspection technician | separate staff account, `hub_id` required | `app_role = technician` |
+| Operations admin | staff account | `app_role = ops`, or platform `role = admin` |
+
+- A customer's two sides are a **view preference**, never an access boundary; guards check `app_role` only.
+- First sign-in with an empty `app_role` is bootstrapped to `customer` **server-side**, once.
+- Platform `admin` sees everything and is the only role that may write `app_role`, `hub_id`, `trust_score`, `return_count`, `account_flagged`.
+- There is **no in-app invitation**: accounts are created through the platform's user management, then assigned a role in Ops → Users.
+
+## 4. Screen inventory
+
+### Authentication & shell
+`/login`, `/register`, `/forgot-password`, `/reset-password`, `/mfa` — Implemented (email+password, OTP verification, reset, TOTP/SMS MFA, Google/Microsoft/Apple/SSO). `/` — role router + one-time Buy/Sell chooser (Implemented). `/profile` — name, phone, city, avatar (private storage), payout account, delivery address, mode switch (Implemented). `/notifications` — list, filters, mark read (Implemented). `/help` — support form (Implemented; see F11).
+
+### Seller
+`/seller` landing + deals (S-01), `/seller/sell` model picker (S-02), wizard steps `details → photos → diagnostics → result → offer → confirm → hub` (S-03…S-12), `result` reused for the post-inspection decision (S-14), `/seller/deals/:id` tracker (S-11 + S-10), `/seller/payouts` (S-13). All screens exist and are wired.
+
+### Buyer
+`/shop` (B-01), `/shop/browse` (B-02), `/shop/grades` (B-04), `/shop/:listingId` (B-03), `/shop/checkout/:listingId` (B-05), `/shop/confirmation/:orderId` (B-06), `/shop/orders` (B-08), `/shop/orders/:orderId` (B-07), `/shop/orders/:orderId/return` (B-09). All exist.
+
+### Technician / hub
+`/hub` queue (T-01), `/hub/:jobId` shell + `checklist`, `grade`, `decision`, `handover` (T-02…T-06), `/hub/returns/:returnId` (T-08). Reject paths live inside the decision/identity steps (T-07). All exist.
+
+### Operations
+`/ops` overview (O-01), `alerts`, `catalogue`, `pricing`, `liquidity`, `inventory`, `exceptions`, `hubs`, `users`, `metrics`, `demo` (O-02…O-11). All exist.
+
+## 5. Workflow inventory
+
+| # | Workflow | Steps verified | Status |
+| --- | --- | --- | --- |
+| 1 | Seller: submission → offer | model → details (IMEI Luhn) → 8/5 photos (browser pixel+brightness check) → 9 diagnostics + battery → deterministic grade → offer (guaranteed always, Instant Cash if eligible) → consent → accept → hub booking (5 days, capacity, slot conflict) | Implemented; photos enforced only client-side (F5) |
+| 2 | Counter: identity → grade → decision → handover | IMEI match + blacklist + activation-lock gate → graded checklist, battery, cosmetic → worst-of-three, verdict vs band → revised offer accepted/declined or mismatch fee → sealed report, tag `CB-#####`, signature, Payout + Device + Listing | Implemented |
+| 3 | Buyer: browse → order | facets + filters + four sorts → listing detail with sealed report and price history → delivery validation, warranty add-on, simulated authorisation → Order + EscrowTransaction(hold) + listing/device reserved + balance payout for Sell For More | Implemented except capture (F1) |
+| 4 | Shipment → settlement | `paid → dispatched → in_transit → delivered` (manual), 7-day window, daily job releases escrow and settles | Simulated transport, real state machine (F3) |
+| 5 | Return → refund/replacement | reason → DOA preference → note/photos → estimated refund → re-inspection at hub → ops outcome (refund full/partial, replacement) → relist or refurbish | Implemented; refund is ledger-only (F2) |
+| 6 | Daily ageing | ladder step 1/2, reserved-day exclusion, day-45 review, day-21 balance, payout run, escrow release, offer expiry, no-shows, deduped reminders | Implemented |
+| 7 | Ops decisions | reprice/override, refurbish→list, liquidate at floor, pause Instant Cash, save pricing, hubs, user roles, exception resolution, mismatch fee, grade dispute, payout retry | Implemented |
+
+## 6. Entities (21)
+
+`Settings` (single record, 46 numeric/flag fields — every fee, day count, percentage, cap, weight, threshold) · `DeviceModel` (brand, model, storage, category, colours, image, launch & successor dates, original price, grade A–D market prices, B2B floor, `price_is_placeholder`, liquidity tier, `ic_paused`, `active`) · `LiquidityScore` (score, days to sell, volatility, launch window, source, `is_current`) · `Hub` (type, address, slots, capacity, distance, active) · `Submission` (declared condition, repairs, water, accessories, warranty, photos, retakes, diagnostics, status, chosen option, consent, final grade, mismatch fee) · `Offer` (version, priced band, IC amount, guaranteed price, eligibility + reason, risk %, breakdown, expiry, status) · `GradeAssessment` (estimate, band, confidence, factors, source) · `InspectionReport` (intake/return, checklist, battery, photos, component grades, verdict, sealed/tag/signature, identity checks, quoted/revised, seller decision) · `Booking` (hub, date, slot, status) · `Device` (grade, payout option, acquisition cost, custody, hub, balance paid, parts, return count, status) · `Listing` (base/current/floor price, ladder step, reserved days, override, warranty, status) · `Order` (amounts, delivery, method, status, escrow status, timestamps, refund, replacement) · `EscrowTransaction` · `Payout` (type, amount, trigger, status incl. `due`, attempts, failure reason) · `ReturnRequest` (reason, DOA preference, photos, status, recommendation, outcome, deduction, refund, replacement) · `ExceptionCase` (four types, resolution) · `Notification` (event, title, body, link, read) · `ActivityLog` · `SupportRequest` · `BlacklistedImei` · `User` (app_role, active_mode, phone, city, avatar, hub_id, payout account, delivery address, trust score, return count, flagged).
+
+Access rules exist on every entity: customers see only their own submissions/offers/orders/returns/notifications; technicians are scoped to their `hub_id`; catalogue/liquidity/hubs/settings are publicly readable but admin-writable; exception and activity tables are staff-only.
+
+## 7. Business rules as implemented
+
+| Rule | Value (default) | Enforced in | Status |
+| --- | --- | --- | --- |
+| Commission | 15 % | offer, revised offer, price-at-grade | Implemented |
+| Inspection fee | ₹200 | offer, revised offer | Implemented |
+| Mismatch fee | ₹100 | mismatch flow, ops collection | Implemented |
+| Return logistics deduction ("as shipped") | ₹300 | `resolutionMath` | Implemented |
+| Change-of-mind deduction | **₹500**, labelled *shipping charges* | `raiseMath` (estimate) + `resolutionMath` (write) | Implemented |
+| Warranty | 12 months; add-on 5 % of price, never on D | handover, checkout, grade guide | Implemented (grade-D nuance F9) |
+| Advance / balance | 50 % / balance on sale or day 21 | `payoutPlan`, `placeOrder`, daily job | Implemented |
+| Payout attempts | 3, then exception | `attemptPayout`, daily job | Simulated rail |
+| Price band | ₹20,000 – ₹1,50,000 | model picker, catalogue | Implemented |
+| Grade factors | B 0.91 · C 0.82 · D 0.60 | `gradePrice` (fallback only) | Implemented |
+| Price ladder | day 15 −7 %, day 30 −12 %, floor-protected, rounded to ₹10, reserved days excluded | `ladderFor`, daily job | Implemented |
+| Day-45 review | listing → `review`, ops alerted | daily job, inventory | Implemented |
+| Offer expiry | 7 days; checked at accept **and** by the daily job | `acceptOffer`, daily job | Implemented |
+| Instant Cash gate | paused → confidence → score ≥ 60 (+10 near launch) → ₹1.5 cr portfolio cap → ₹15 L per-model cap | `evaluateEligibility` | Implemented |
+| Liquidity score | weights 40/25/20/15, cold start 80/65/45 before 3 sales, −6 per day-45 return | `scoreModel`, weekly recalc | Implemented (demand proxy F17) |
+| Return window | 7 days from delivery; one open return per order | `raiseReturn` | Implemented |
+| Return outcomes | not-as-graded → faulty/as-shipped; DOA → confirmed/replacement/as-shipped; changed mind → changed_mind | `outcomesFor`, `resolveReturn` | Implemented |
+| Booking | next 5 days, hub slots, daily capacity, one live booking per submission | `bookInspection` | Implemented |
+| Business date | real date + `sim_day_offset`, Asia/Kolkata | `businessNow`, all jobs | Implemented |
+| Grade D | device → `in_refurbishment`, **no listing created** | `completeHandover` | Implemented (contradicts buyer copy F9) |
+
+## 8. Feature classification (proposal catalogue)
+
+| Code | Feature | Status | Note |
+| --- | --- | --- | --- |
+| S-01 | Sell landing | Implemented | |
+| S-02 | Model picker | Implemented | brand chips, search, band-disabled models |
+| S-03 | Submission details | Implemented | tiles only; draft persisted |
+| S-04 | Photo capture | Partial | 8/5 shots gated in the browser only; server does not verify count |
+| S-05 | Diagnostics | Simulated | seller-declared answers; "scan" is an animation |
+| S-06 | Automatic grading + rejects | Simulated | deterministic engine; no vision model; rejects enforced server-side |
+| S-07 | Offer screen | Implemented | breakdown, risk, expiry |
+| S-08 | Instant Cash eligibility | Implemented | ordered gates + plain reasons |
+| S-09 | Accept + consent | Implemented | re-priced server-side; consent required for Sell For More |
+| S-10 | Sell For More progress | Implemented | |
+| S-11 | Deal tracking | Implemented | |
+| S-12 | Hub booking | Implemented | capacity + conflict checks |
+| S-13 | Payout history | Implemented | |
+| S-14 | Post-inspection decision | Implemented | accept/decline revised |
+| S-15 | Status vocabulary | Implemented | single `statusLabel` map |
+| B-01 | Shop home | Implemented | |
+| B-02 | Browse + filters | Implemented | facets computed server-side |
+| B-03 | Listing detail | Implemented | sealed report, price history |
+| B-04 | Grade guide | Implemented | copy claims D ships without warranty — unreachable (F9) |
+| B-05 | Checkout + escrow hold | Partial | full flow, authorisation simulated |
+| B-06 | Order confirmation | Implemented | |
+| B-07 | Order tracking | Partial | timeline real, transport manual (F3) |
+| B-08 | My orders | Implemented | |
+| B-09 | Raise a return | Implemented | estimate before submit, one open return |
+| B-10 | Return outcome visibility | Implemented | |
+| B-11 | Warranty add-on | Implemented | suppressed on D and on no-warranty listings |
+| T-01 | Hub queue | Implemented | hub-scoped |
+| T-02 | Identity check | Implemented | mismatch → exception |
+| T-03 | Inspection checklist | Implemented | server-computed component grades |
+| T-04 | Grade confirmation | Implemented | sealed report, verdict |
+| T-05 | Decision | Implemented | revised offer / mismatch |
+| T-06 | Handover | Implemented | tag, signature, payout, device, listing |
+| T-07 | Rejects | Implemented | reason + exception |
+| T-08 | Return re-inspection | Implemented | |
+| O-01 | Overview | Implemented | KPIs, attention, feed, hubs, age chart |
+| O-02 | Alerts | Implemented | grouped |
+| O-03 | Catalogue | Implemented | incl. placeholder flag |
+| O-04 | Pricing | Implemented | all Settings groups + live preview |
+| O-05 | Liquidity board | Implemented | score, cap meter, pause, recalc |
+| O-06 | Inventory | Implemented | override, refurbish→list, liquidate |
+| O-07 | Exceptions | Implemented | all four case types |
+| O-08 | Hubs | Implemented | CRUD + active |
+| O-09 | Users | Partial | role/hub assignment only; no in-app invite (F12) |
+| O-10 | Metrics | Implemented | metric set differs from the docs — corrected (F13) |
+| O-11 | Demo controls | Implemented | clock, mode, payout failure, reset, role preview |
+| X-01 | Authentication | Implemented | incl. MFA |
+| X-02 | Role bootstrap | Implemented | |
+| X-03 | Role & mode routing | Implemented | |
+| X-04 | Notifications | Implemented | in-app + 13 emailed events |
+| X-05 | Help / care | Partial | no ops inbox (F11) |
+| X-06 | Profile | Implemented | |
+| X-07 | Theme | Implemented | |
+| X-08 | Business-date pill | Implemented | |
+| X-09 | Empty/loading/error states | Implemented | |
+| X-10 | Status vocabulary | Implemented | |
+| X-11 | Formatting | Implemented | `en-IN`, Asia/Kolkata |
+
+## 9. Divergences, gaps and inconsistencies
+
+**F1 — Payment capture is simulated (high, expected).** Checkout offers UPI/card/net-banking and a "simulate a declined payment" switch; nothing is charged, no gateway, no webhook, no reconciliation. Escrow is a ledger table, not a provider hold.
+
+**F2 — Payout rail is simulated (high, expected).** `attemptPayout` flips `pending → approved → paid` and only fails when `Settings.simulate_payout_failure` is on. No beneficiary verification, no UTR.
+
+**F3 — Courier is not integrated (medium).** Shipment states are advanced by ops (or by the buyer in demo mode via the prototype control). No AWB, no webhook, no delivery proof.
+
+**F4 — "AI grading" is a rule engine (medium, by design).** Estimate = worst of battery, cosmetic, self-declared function checks; band and confidence from repair certainty and photo retakes. No image analysis. The interface is swappable (see `ai-integration.md.txt`).
+
+**F5 — Photo gate is client-only (medium).** The wizard requires every shot before continuing and validates resolution + brightness in the browser, but `gradeSubmission` never checks the photo array. A direct call can grade a submission with no photos.
+
+**F6 — Roles collapsed (informational).** The proposal's four personas are three `app_role` values plus the platform admin; seller and buyer share `customer` + `active_mode`.
+
+**F7 — No buyer order cancellation (high).** `Order.status` includes `cancelled`, but no command or screen writes it. A buyer can only return after delivery. Consequently the "cancellation" half of the change-of-mind rule does not exist; the ₹500 applies to a **change-of-mind return**, not a pre-dispatch cancellation.
+
+**F8 — No seller-side cancellation fee (medium).** After accepting an offer a seller can cancel the hub slot (`manageBooking`) or decline at the counter (`declineRevised`) at no charge. The only seller-side penalty is the ₹100 mismatch fee after a two-grade drop.
+
+**F9 — Grade D is never listed (medium).** Handover sends grade D to refurbishment and creates no listing, yet the buyer grade guide states D ships without a warranty, and a grade-D **return** is relisted with `warranty_months: 0` (`relistDevice`). Either the guide copy or the relist path should change.
+
+**F10 — Two `floor_price` definitions (medium).** A first listing sets `floor_price = acquisition_cost` (what CertiBuy paid); a relisted return sets `floor_price = model.b2b_floor_price`. The ladder stops at different levels for the same device depending on its history.
+
+**F11 — Customer care has no ops inbox (medium).** The form saves a `SupportRequest` and emails the care address; there is no screen where ops can read, reply to or resolve it (`SupportRequest` count is 0 because nothing consumes it). Ops → Exceptions covers returns/payments, not messages.
+
+**F12 — No in-app invitations (medium).** Ops → Users lists accounts and edits role/hub; accounts must be created through the platform's user management first. `inviteUser` is not called anywhere in the app.
+
+**F13 — Documented metric set was wrong (low).** The implemented nine are: grade-mismatch rate, offer-acceptance rate, Instant Cash share, median days to sell, 30-day sell-through, devices reaching day 21 unsold, inventory ageing beyond the review day, not-as-graded return rate, cost per successful acquisition — each with 8 weekly periods. (Earlier docs listed gross margin, escrow age, payout straight-through and hub throughput; those are **not** implemented. Corrected in `automations.md.txt` and `overview.md.txt`.)
+
+**F14 — Notification email is limited (low).** Uses the platform's transactional mail to registered addresses only; the base URL is hardcoded to the published host; no templates, no digest, failures swallowed silently (by design) but not surfaced anywhere.
+
+**F15 — Activity log has no viewer (low).** Records are written by every job/command and shown only as a recent-activity feed on the ops overview; there is no filtered audit screen.
+
+**F16 — User `return_count` is never incremented (low).** Ops shows and edits it, but only `Device.return_count` is written when a return is raised. The user-level lifetime counter is decorative.
+
+**F17 — Liquidity "demand" is a proxy (low).** There are no views or enquiries, so demand = recent sales ÷ (recent sales + active listings). Documented as if it were a demand signal.
+
+**F18 — No rate limiting or abuse control (low at this scale).** The help form, commands and auth rely on platform defaults; no CAPTCHA, no per-user quotas, no duplicate-submission guard beyond "one open return".
+
+**F19 — Support content is private but unbounded by policy (low).** Message length is validated (10–1000); there is no retention or purge path for photos, signatures or supporters' details.
+
+## 10. Integrations and automations — reality check
+
+| Integration | Referenced in code | Actually connected |
+| --- | --- | --- |
+| Transactional email | yes (`SendEmail` from domain + support module) | yes — registered users only |
+| Private file storage + signed URLs | yes (seller photos, inspection photos, signature, avatar) | yes |
+| Payment gateway | no | no |
+| Payout/bank rail | no | no |
+| Courier | no | no |
+| Vision/LLM grading | no | no |
+| LLM text | adapter module only, unused by the product | no |
+
+Automations: one daily job (7 steps), one weekly liquidity recalc, one metrics computation, one demo clock, one demo seed, one manual payout retry. All are idempotent per business date; all run on the same code path whether triggered by scheduler, ops or the demo clock.
+
+## 11. Validation and security coverage
+
+Enforced server-side: caller identity and role on every staff endpoint; ownership on every seller/buyer action; hub scoping for technicians; money and status recomputed from records, never accepted from the body; enums and lengths validated; IMEI re-validated (15 digits + Luhn); booking capacity/conflict; return window and single-open-return; offer expiry at accept; handover preconditions (sealed, tag format, signature, no existing device).
+
+Gaps: photo presence (F5), no rate limits (F18), no webhook signature surface yet (nothing to sign), audit viewer (F15), support inbox (F11), buyer cancellation (F7).
+
+## 12. Migration risk register
+
+1. **Money arithmetic is the crown jewel** — port `pricing`, `offer`, `inspection`, `custody`, `returns`, `lifecycle` unchanged and keep `Settings` as the only source of numbers.
+2. **Settings must be seeded before any flow** — the engine refuses to price without it (400), it never invents defaults.
+3. **Access rules are part of the schema** — recreate them as database policies, especially technician hub scoping and "money tables are system-write-only".
+4. **The business date is data** — keep `sim_day_offset` (or an explicit `businessDate` argument) or the demo and the jobs diverge.
+5. **Two ledger tables carry the truth** (`Payout`, `EscrowTransaction`) — never delete rows; correct with compensating entries.
+6. **Simulated boundaries must be labelled** — payment, payout, courier and AI grading need real providers before production; the interfaces are already isolated.
+7. **Decide F7, F9, F10, F11 before rebuilding** — they are product decisions, not implementation details.
+
+## 13. Documentation map (single owner per topic)
+
+| Question | Document |
+| --- | --- |
+| What the product is, money model, invariants | `overview.md.txt` |
+| Who may do what | `roles.md.txt` |
+| What each screen does | `features.md.txt` + `frontend.md.txt` |
+| Tables, fields, relationships, indexes | `database.md.txt` |
+| Endpoint contracts and read models | `api.md.txt` |
+| Jobs, clocks, payout machine | `automations.md.txt` |
+| Notification events and email policy | `notifications.md.txt` |
+| Grading engine and swapping in a model | `ai-integration.md.txt` |
+| Stack, conventions, commands | `tech-stack.md.txt` |
+| Environments, secrets, go-live, rollback | `deployment.md.txt` |
+| Anything framed as a business document | `vendor-architecture.md.txt` |
+| **What exists today, and what does not** | **this file** |
+
+No document duplicates another's topic; where two touch the same fact, this file is authoritative about implementation status and the topical document is authoritative about intent.

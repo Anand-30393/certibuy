@@ -1,0 +1,15 @@
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# New source and config files use LF. Existing docs keep their current line endings.
+[*.{ts,tsx,js,mjs,cjs,json,yaml,yml,css}]
+end_of_line = lf
+
+[*.{md,txt}]
+trim_trailing_whitespace = false

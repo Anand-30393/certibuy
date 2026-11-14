@@ -1,0 +1,10 @@
+{
+  "name": "@certibuy/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure business rules (pricing, offer, grading, inspection, lifecycle, custody, returns, liquidity, business date, money). No DB, HTTP, clock or framework.",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

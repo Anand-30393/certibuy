@@ -1,0 +1,10 @@
+{
+  "name": "@certibuy/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Prisma schema, portable SQL migrations, Supabase-only SQL and seeds.",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

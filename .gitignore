@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+dist/
+*.tsbuildinfo
+
+# Tests
+coverage/
+playwright-report/
+test-results/
+
+# Environment — secrets never enter the repository
+.env
+.env.*
+!.env.example
+
+# Tooling
+.vercel/
+.turbo/
+supabase/.temp/
+*.log
+.DS_Store
+Thumbs.db
