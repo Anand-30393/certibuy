@@ -1,3 +1,3 @@
-// @certibuy/integrations — Ports and simulated adapters (payments, payouts, courier, grading, IMEI, mail) plus the Supabase auth and storage adapters.
-// Phase 0 placeholder: intentionally empty. See docs/architecture.md §4.
-export {};
+// @certibuy/integrations — ports for external effects. Adapters live beside them; the Supabase
+// adapters are under ./supabase and are the only code that imports @supabase/*.
+export * from "./ports";

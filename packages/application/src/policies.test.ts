@@ -79,7 +79,8 @@ describe("dispatch", () => {
     db: {} as AppContext["db"],
     actor: a,
     now: new Date("2026-11-16T10:00:00Z"),
-    env: { requireStaffMfa, demoToolsEnabled: false },
+    storage: {} as AppContext["storage"],
+    env: { requireStaffMfa, demoToolsEnabled: false, appPublicUrl: "http://localhost" },
   });
   const registry = {
     echo: defineHandler({

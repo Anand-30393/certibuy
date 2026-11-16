@@ -217,6 +217,9 @@ importers:
       react-dom:
         specifier: ^19.3.1
         version: 19.3.1(react@19.3.1)
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/react':
         specifier: ^19.3.0
@@ -236,6 +239,9 @@ importers:
       '@certibuy/domain':
         specifier: workspace:*
         version: link:../domain
+      '@certibuy/integrations':
+        specifier: workspace:*
+        version: link:../integrations
       zod:
         specifier: ^4.6.7
         version: 4.6.7

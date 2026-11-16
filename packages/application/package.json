@@ -11,6 +11,7 @@
     "@certibuy/contracts": "workspace:*",
     "@certibuy/db": "workspace:*",
     "@certibuy/domain": "workspace:*",
+    "@certibuy/integrations": "workspace:*",
     "zod": "^4.6.7"
   }
 }

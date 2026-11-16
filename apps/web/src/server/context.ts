@@ -8,6 +8,7 @@ import {
 } from "@certibuy/application";
 import type { Area } from "@certibuy/contracts";
 import { getPrisma } from "@certibuy/db";
+import { createSupabaseStorage } from "@certibuy/integrations/supabase";
 import { redirect } from "next/navigation";
 import { getActor } from "./actor";
 
@@ -17,11 +18,18 @@ export function serverEnv(): AppContext["env"] {
   return {
     requireStaffMfa: process.env.REQUIRE_STAFF_MFA !== "false",
     demoToolsEnabled: process.env.DEMO_TOOLS_ENABLED === "true",
+    appPublicUrl: process.env.APP_PUBLIC_URL ?? "http://localhost:3000",
   };
 }
 
 export async function buildContext(): Promise<AppContext> {
-  return { db: getPrisma(), actor: await getActor(), now: new Date(), env: serverEnv() };
+  return {
+    db: getPrisma(),
+    actor: await getActor(),
+    now: new Date(),
+    storage: createSupabaseStorage(),
+    env: serverEnv(),
+  };
 }
 
 /**

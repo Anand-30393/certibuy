@@ -46,3 +46,5 @@ export async function getAuthState(client: AuthClient): Promise<AuthState | null
     aal: level?.currentLevel === "aal2" ? "aal2" : "aal1",
   };
 }
+
+export { createSupabaseStorage } from "./storage";
