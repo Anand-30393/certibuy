@@ -716,6 +716,8 @@ Rule details confirmed by the project owner on 16 November 2026 (golden cases in
 | Grade better than the band | The quoted price stands (verdict `inside`) | INS-008 |
 | Low-confidence band at A or D | Clamped to two grades: `[A,B]` or `[C,D]` | GRD-009 |
 | Warranty add-on on grade D | Requesting it is **rejected** (`400`), nothing written | ORD-003 |
+| Measured liquidity score | The documented formula (`automations.md.txt` §4) as written, every component capped to 0–100 | LIQ-005, LIQ-006 |
+| Day-45 liquidation (re-confirmed) | Stays a **one-click ops action** at the floor price; never automatic | LAD-008 |
 
 Open items from the consistency review (revision 4):
 

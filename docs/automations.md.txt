@@ -104,18 +104,25 @@ For every active model, over the last 8 weeks of sold orders:
 
 ```
 sales           = per sold unit: days_to_sell, achieved price / market_price_a
-demand          = share of views/enquiries (or listings touched) relative to the model's tier
-volatility      = stdev(achieved_price / market_price_a) / mean × 100
+avg_days        = mean days_to_sell of those sales
+demand          = recent_sales ÷ (recent_sales + active_listings)        // documented proxy, audit F17
+demand_score    = cap(100 × demand)
+volatility      = population stdev(achieved_price / market_price_a) / mean × 100
 launch_window   = 1 if successor_launch_date is inside launch_window_days
-days_score      = 100 × (review_day − min(avg_days, review_day)) / (review_day − review_day/6)
+launch_score    = 0 if launch_window = 1, otherwise 100
+days_score      = cap(100 × (review_day − min(avg_days, review_day)) / (review_day − review_day/6))
+volatility_score= cap(100 − volatility)
 score           = (liq_w_days/100)·days_score + (liq_w_demand/100)·demand_score
-                + (liq_w_volatility/100)·(100 − volatility)
+                + (liq_w_volatility/100)·volatility_score
                 + (liq_w_launch/100)·launch_score
 score          -= liq_review_penalty × day45_returns_for_model
 score           = clamp(0..100)
 
+cap(x)          = clamp(x, 0, 100)   // every component is capped before weighting
 cold start (fewer than 3 measured sales): score = tier_score (high 80 / medium 65 / low 45) − penalty
 ```
+
+**Confirmed 16 November 2026:** the documented formula is used as written, with each component capped to 0–100. Without the cap, `days_score` exceeds 100 when the average sale takes less than `review_day / 6` days (7.5 days with the defaults). Golden cases: LIQ-005 (score 79) and LIQ-006 (capping, launch window and penalty; score 73) in `packages/domain/__fixtures__/liquidity.json`.
 
 Writes a new `LiquidityScore` (`is_current:false` for all previous rows, `true` for the new one, `source` = `measured` / `cold_start`). Notifies ops when a model crosses the threshold in either direction, and recommends pausing Instant Cash when a model is below threshold with stock on hand (`instant_cash_paused`).
 
