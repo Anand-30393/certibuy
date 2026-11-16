@@ -1,0 +1,159 @@
+{
+  "module": "lifecycle (price ladder) and listing creation",
+  "source": "docs/automations.md.txt §3 step 1; docs/database.md.txt §6; docs/architecture.md §10.2–§10.3 (F9, F10)",
+  "rules": {
+    "daysListed": "business_date − listed_at − reserved_days",
+    "steps": "day ≥ 15 → base × (1 − 7 %); day ≥ 30 → base × (1 − 12 %); day ≥ 45 → review",
+    "price": "max(floor_price, stepped price), rounded to the nearest ₹10",
+    "floor": "floor_price = device_model.b2b_floor_price for every listing (F10)",
+    "override": "override_price stops the ladder moving the price; the step is still recorded",
+    "gradeD": "grade D: no listing at handover; listed after refurbishment with warranty_months = 0 and no add-on (F9)"
+  },
+  "cases": [
+    {
+      "id": "LAD-001",
+      "description": "Day 14: still step 0 at base price",
+      "status": "confirmed",
+      "input": { "base_price": 36000, "floor_price": 20000, "days_listed": 14 },
+      "expected": { "ladder_step": 0, "current_price": 36000, "status": "active" }
+    },
+    {
+      "id": "LAD-002",
+      "description": "Day 15: step 1, −7 % (the automations.md example: ₹33,480)",
+      "status": "confirmed",
+      "input": { "base_price": 36000, "floor_price": 20000, "days_listed": 15 },
+      "expected": { "ladder_step": 1, "current_price": 33480, "status": "active" }
+    },
+    {
+      "id": "LAD-003",
+      "description": "Day 29: still step 1",
+      "status": "confirmed",
+      "input": { "base_price": 36000, "floor_price": 20000, "days_listed": 29 },
+      "expected": { "ladder_step": 1, "current_price": 33480 }
+    },
+    {
+      "id": "LAD-004",
+      "description": "Day 30: step 2, −12 %",
+      "status": "confirmed",
+      "input": { "base_price": 36000, "floor_price": 20000, "days_listed": 30 },
+      "expected": { "ladder_step": 2, "current_price": 31680, "status": "active" }
+    },
+    {
+      "id": "LAD-005",
+      "description": "Floor protection: step 2 would be ₹31,680 but the B2B floor is ₹32,000",
+      "status": "confirmed",
+      "input": { "base_price": 36000, "floor_price": 32000, "days_listed": 30 },
+      "expected": { "ladder_step": 2, "current_price": 32000 }
+    },
+    {
+      "id": "LAD-006",
+      "description": "Rounding to the nearest ₹10: 45,550 × 0.93 = 42,361.5 → ₹42,360",
+      "status": "confirmed",
+      "input": { "base_price": 45550, "floor_price": 20000, "days_listed": 15 },
+      "expected": { "ladder_step": 1, "current_price": 42360 }
+    },
+    {
+      "id": "LAD-007",
+      "description": "Rounding at step 2: 45,550 × 0.88 = 40,084 → ₹40,080",
+      "status": "confirmed",
+      "input": { "base_price": 45550, "floor_price": 20000, "days_listed": 30 },
+      "expected": { "ladder_step": 2, "current_price": 40080 }
+    },
+    {
+      "id": "LAD-008",
+      "description": "Day 45: listing moves to review, device to day45_review; ops alerted (B2B liquidation is a manual one-click action)",
+      "status": "confirmed",
+      "input": { "base_price": 36000, "floor_price": 20000, "days_listed": 45 },
+      "expected": {
+        "listing_status": "review",
+        "device_status": "day45_review",
+        "notification": "day45_review",
+        "auto_liquidated": false
+      }
+    },
+    {
+      "id": "LAD-009",
+      "description": "Reserved days do not count: listed 1 Jan, today 20 Jan (19 days), 5 reserved → day 14",
+      "status": "confirmed",
+      "input": {
+        "base_price": 36000,
+        "floor_price": 20000,
+        "listed_at": "2026-01-01",
+        "business_date": "2026-01-20",
+        "reserved_days": 5
+      },
+      "expected": { "days_listed": 14, "ladder_step": 0, "current_price": 36000 }
+    },
+    {
+      "id": "LAD-010",
+      "description": "Override price stops the ladder; the step is still recorded",
+      "status": "confirmed",
+      "input": {
+        "base_price": 36000,
+        "floor_price": 20000,
+        "days_listed": 15,
+        "override_price": 35000
+      },
+      "expected": { "ladder_step": 1, "price_moved_by_ladder": false, "effective_price": 35000 }
+    },
+    {
+      "id": "LST-001",
+      "description": "First listing at handover (grade B): grade price, 12-month warranty, floor = B2B floor",
+      "status": "confirmed",
+      "input": {
+        "event": "completeHandover",
+        "final_grade": "B",
+        "model": { "market_price_a": 50000, "b2b_floor_price": 28000 },
+        "acquisition_cost": 38475
+      },
+      "expected": {
+        "listing_created": true,
+        "base_price": 45500,
+        "floor_price": 28000,
+        "warranty_months": 12,
+        "ladder_step": 0
+      }
+    },
+    {
+      "id": "LST-002",
+      "description": "Grade D at handover: no listing, device goes to refurbishment",
+      "status": "confirmed",
+      "input": {
+        "event": "completeHandover",
+        "final_grade": "D",
+        "model": { "market_price_a": 50000, "b2b_floor_price": 20000 }
+      },
+      "expected": { "listing_created": false, "device_status": "in_refurbishment" }
+    },
+    {
+      "id": "LST-003",
+      "description": "Grade D marked refurbished: listed with no warranty and no add-on",
+      "status": "confirmed",
+      "input": {
+        "event": "markRefurbishedAndList",
+        "final_grade": "D",
+        "model": { "market_price_a": 50000, "b2b_floor_price": 20000 }
+      },
+      "expected": {
+        "listing_created": true,
+        "base_price": 30000,
+        "floor_price": 20000,
+        "warranty_months": 0,
+        "warranty_addon_offered": false,
+        "ladder_step": 0
+      }
+    },
+    {
+      "id": "LST-004",
+      "description": "Relisted healthy return keeps the single floor definition (B2B floor, not acquisition cost)",
+      "status": "confirmed",
+      "input": {
+        "event": "resolveReturn.relist",
+        "final_grade": "B",
+        "model": { "market_price_a": 50000, "b2b_floor_price": 28000 },
+        "acquisition_cost": 38475
+      },
+      "expected": { "base_price": 45500, "floor_price": 28000, "ladder_step": 0 }
+    }
+  ]
+}

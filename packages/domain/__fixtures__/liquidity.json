@@ -1,0 +1,36 @@
+{
+  "module": "liquidity score (cold start)",
+  "source": "docs/automations.md.txt §4; docs/ai-integration.md.txt §9",
+  "rule": "Fewer than 3 measured sales: score = tier score (high 80, medium 65, low 45) − liq_review_penalty × day-45 returns, clamped to 0–100. The measured-sales formula is not covered here (see notes).",
+  "notes": "The measured formula's days_score denominator in automations.md.txt §4 is unusual; golden cases for it should be added once the business confirms a worked example.",
+  "cases": [
+    {
+      "id": "LIQ-001",
+      "description": "Cold start, high tier, no day-45 returns",
+      "status": "confirmed",
+      "input": { "measured_sales": 0, "tier": "high", "day45_returns": 0 },
+      "expected": { "score": 80, "source": "cold_start" }
+    },
+    {
+      "id": "LIQ-002",
+      "description": "Cold start, medium tier, one day-45 return (−6)",
+      "status": "confirmed",
+      "input": { "measured_sales": 2, "tier": "medium", "day45_returns": 1 },
+      "expected": { "score": 59, "source": "cold_start" }
+    },
+    {
+      "id": "LIQ-003",
+      "description": "Cold start, low tier, two day-45 returns",
+      "status": "confirmed",
+      "input": { "measured_sales": 1, "tier": "low", "day45_returns": 2 },
+      "expected": { "score": 33, "source": "cold_start" }
+    },
+    {
+      "id": "LIQ-004",
+      "description": "Score is clamped at 0",
+      "status": "confirmed",
+      "input": { "measured_sales": 0, "tier": "low", "day45_returns": 8 },
+      "expected": { "score": 0 }
+    }
+  ]
+}

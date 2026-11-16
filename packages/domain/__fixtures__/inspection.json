@@ -1,0 +1,86 @@
+{
+  "module": "inspection (technician grade and verdict)",
+  "source": "docs/ai-integration.md.txt §4 and §7; docs/overview.md.txt §4; docs/api.md.txt confirmGrade, rejectForMismatch",
+  "rules": {
+    "functions": "0 failed checks → A, 1 → B, 2 → C, 3 or more → D",
+    "battery": "same floors as grading (90 / 85 / 80)",
+    "final": "worst(battery, cosmetic, functions)",
+    "verdict": "inside the AI band → quoted price stands; exactly one grade below → revised offer; two or more below → mismatch (mismatch_fee)"
+  },
+  "cases": [
+    {
+      "id": "INS-001",
+      "description": "Clean device confirms grade A",
+      "status": "confirmed",
+      "input": { "failed_checks": 0, "battery_health": 93, "cosmetic_grade": "A" },
+      "expected": {
+        "component_grades": { "battery": "A", "cosmetic": "A", "functions": "A" },
+        "final_grade": "A"
+      }
+    },
+    {
+      "id": "INS-002",
+      "description": "Failed-check mapping: 1 → B, 2 → C, 3 → D, 5 → D",
+      "status": "confirmed",
+      "input": { "failed_checks_values": [1, 2, 3, 5] },
+      "expected": { "function_grades": ["B", "C", "D", "D"] }
+    },
+    {
+      "id": "INS-003",
+      "description": "Worst component wins: cosmetic C beats battery A and functions B",
+      "status": "confirmed",
+      "input": { "failed_checks": 1, "battery_health": 91, "cosmetic_grade": "C" },
+      "expected": { "final_grade": "C", "worst_key": "cosmetic" }
+    },
+    {
+      "id": "INS-004",
+      "description": "Verdict inside: final B within band [A,B]",
+      "status": "confirmed",
+      "input": { "band": ["A", "B"], "final_grade": "B" },
+      "expected": { "verdict": "inside" }
+    },
+    {
+      "id": "INS-005",
+      "description": "Verdict one_below: final C against band [A,B] produces a revised offer",
+      "status": "confirmed",
+      "input": { "band": ["A", "B"], "final_grade": "C" },
+      "expected": { "verdict": "one_below", "next": "revised_offer" }
+    },
+    {
+      "id": "INS-006",
+      "description": "Verdict two_below: final D against band [A,B] is a mismatch with the ₹100 mismatch fee",
+      "status": "confirmed",
+      "input": { "band": ["A", "B"], "final_grade": "D" },
+      "expected": { "verdict": "two_below", "next": "mismatch", "fee": 100 }
+    },
+    {
+      "id": "INS-007",
+      "description": "Verdict one_below for a three-wide Low band: final D against [A,B,C]",
+      "status": "confirmed",
+      "input": { "band": ["A", "B", "C"], "final_grade": "D" },
+      "expected": { "verdict": "one_below" }
+    },
+    {
+      "id": "INS-008",
+      "description": "A grade better than the band keeps the quoted price",
+      "status": "assumption",
+      "notes": "Docs define inside / one_below / two_below only. Assumed: better than the band counts as inside (quoted price stands).",
+      "input": { "band": ["B", "C"], "final_grade": "A" },
+      "expected": { "verdict": "inside" }
+    },
+    {
+      "id": "INS-009",
+      "description": "Revised offer at the confirmed grade (market ₹50,000 A, confirmed C → ₹41,000 market)",
+      "status": "confirmed",
+      "input": { "model": { "market_price_a": 50000 }, "final_grade": "C" },
+      "expected": { "market": 41000, "revised_guaranteed": 34650 }
+    },
+    {
+      "id": "INS-010",
+      "description": "Battery health outside 50–100 is rejected as invalid input",
+      "status": "confirmed",
+      "input": { "battery_health_values": [49, 101] },
+      "expected": { "valid": [false, false] }
+    }
+  ]
+}

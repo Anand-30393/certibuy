@@ -7,6 +7,8 @@
     "node": ">=24"
   },
   "scripts": {
+    "dev": "corepack pnpm --filter @certibuy/web dev",
+    "build": "corepack pnpm --filter @certibuy/web build",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",

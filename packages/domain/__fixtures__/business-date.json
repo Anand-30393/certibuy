@@ -1,0 +1,46 @@
+{
+  "module": "business date",
+  "source": "CLAUDE.md §2 invariant 3; docs/automations.md.txt §2",
+  "rule": "businessDate = calendar date in Asia/Kolkata of (now) + Settings.sim_day_offset days, as yyyy-mm-dd. A supplied businessDate is used verbatim.",
+  "cases": [
+    {
+      "id": "BDT-001",
+      "description": "Late evening UTC is already the next day in India",
+      "status": "confirmed",
+      "input": { "now_utc": "2026-11-15T20:00:00Z", "sim_day_offset": 0 },
+      "expected": { "business_date": "2026-11-16" }
+    },
+    {
+      "id": "BDT-002",
+      "description": "One minute before IST midnight stays on the same day",
+      "status": "confirmed",
+      "input": { "now_utc": "2026-11-15T18:29:00Z", "sim_day_offset": 0 },
+      "expected": { "business_date": "2026-11-15" }
+    },
+    {
+      "id": "BDT-003",
+      "description": "IST midnight boundary (18:30 UTC) rolls to the next day",
+      "status": "confirmed",
+      "input": { "now_utc": "2026-11-15T18:30:00Z", "sim_day_offset": 0 },
+      "expected": { "business_date": "2026-11-16" }
+    },
+    {
+      "id": "BDT-004",
+      "description": "Demo clock offset of +7 days",
+      "status": "confirmed",
+      "input": { "now_utc": "2026-11-15T20:00:00Z", "sim_day_offset": 7 },
+      "expected": { "business_date": "2026-11-23" }
+    },
+    {
+      "id": "BDT-005",
+      "description": "An explicit businessDate (backfill / test) is used verbatim",
+      "status": "confirmed",
+      "input": {
+        "now_utc": "2026-11-15T20:00:00Z",
+        "sim_day_offset": 7,
+        "business_date_override": "2026-12-01"
+      },
+      "expected": { "business_date": "2026-12-01" }
+    }
+  ]
+}

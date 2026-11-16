@@ -1,0 +1,207 @@
+{
+  "module": "checkout totals, pre-dispatch cancellation, returns",
+  "source": "docs/overview.md.txt §5–§6; docs/api.md.txt placeOrder, cancelOrder, raiseReturn, resolveReturn; docs/architecture.md §11 (F7, D3)",
+  "rules": {
+    "total": "(override_price ?? current_price) + warranty add-on (warranty_addon_pct %, never on grade D or 0-month listings)",
+    "cancel": "only while pending or paid; paid → refund total − cancel_fee (default 0 = full refund); dispatched or later → 409",
+    "returnWindow": "closes on delivered_at + return_window_days",
+    "outcomes": "not_as_graded → faulty | as_shipped; dead_on_arrival → doa_confirmed | doa_replacement | as_shipped; buyer_changed_mind → changed_mind",
+    "deductions": "as_shipped ₹300 (return_logistics); changed_mind ₹500 (shipping_charges); otherwise 0"
+  },
+  "cases": [
+    {
+      "id": "ORD-001",
+      "description": "Total with the second-year warranty add-on",
+      "status": "confirmed",
+      "input": {
+        "current_price": 47000,
+        "grade": "B",
+        "warranty_months": 12,
+        "warranty_addon": true
+      },
+      "expected": { "device_price": 47000, "warranty_addon_amount": 2350, "total": 49350 }
+    },
+    {
+      "id": "ORD-002",
+      "description": "An ops override price is used instead of the current price",
+      "status": "confirmed",
+      "input": {
+        "current_price": 47000,
+        "override_price": 44000,
+        "grade": "B",
+        "warranty_months": 12,
+        "warranty_addon": true
+      },
+      "expected": { "device_price": 44000, "warranty_addon_amount": 2200, "total": 46200 }
+    },
+    {
+      "id": "ORD-003",
+      "description": "Grade D (0-month warranty) listing: the add-on is not offered",
+      "status": "assumption",
+      "notes": "Docs say the add-on is never offered on grade D. Assumed: a request for it is ignored rather than rejected.",
+      "input": {
+        "current_price": 30000,
+        "grade": "D",
+        "warranty_months": 0,
+        "warranty_addon": true
+      },
+      "expected": { "warranty_addon_amount": 0, "total": 30000 }
+    },
+    {
+      "id": "ORD-004",
+      "description": "Simulated declined payment writes nothing",
+      "status": "confirmed",
+      "input": { "command": "placeOrder", "declined": true, "total": 49350 },
+      "expected": { "declined": true, "total": 49350, "records_written": 0 }
+    },
+    {
+      "id": "CAN-001",
+      "description": "Cancel a paid order before dispatch: full refund",
+      "status": "confirmed",
+      "input": { "order_status": "paid", "total": 49350, "cancel_fee": 0 },
+      "expected": {
+        "order_status": "cancelled",
+        "escrow_tx": "refund_full",
+        "refund": 49350,
+        "escrow_status": "refunded_full",
+        "listing_status": "active",
+        "device_status": "listed",
+        "notification": "order_cancelled"
+      }
+    },
+    {
+      "id": "CAN-002",
+      "description": "Cancel a pending (unpaid, async) order: no money moved",
+      "status": "confirmed",
+      "input": { "order_status": "pending", "total": 49350, "cancel_fee": 0 },
+      "expected": {
+        "order_status": "cancelled",
+        "escrow_tx": null,
+        "refund": 0,
+        "listing_status": "active"
+      }
+    },
+    {
+      "id": "CAN-003",
+      "description": "Cancel after dispatch is refused",
+      "status": "confirmed",
+      "input": { "order_status": "dispatched", "total": 49350, "cancel_fee": 0 },
+      "expected": { "http": 409 }
+    },
+    {
+      "id": "CAN-004",
+      "description": "If the business ever sets a cancellation fee, the refund becomes partial",
+      "status": "confirmed",
+      "input": { "order_status": "paid", "total": 49350, "cancel_fee": 500 },
+      "expected": {
+        "escrow_tx": "refund_partial",
+        "refund": 48850,
+        "escrow_status": "refunded_partial"
+      }
+    },
+    {
+      "id": "CAN-005",
+      "description": "The ₹500 change-of-mind deduction never applies to a cancellation",
+      "status": "confirmed",
+      "input": { "order_status": "paid", "total": 49350, "cancel_fee": 0, "change_mind_fee": 500 },
+      "expected": { "refund": 49350 }
+    },
+    {
+      "id": "RET-001",
+      "description": "Return window: delivered 10 Nov closes 17 Nov",
+      "status": "confirmed",
+      "input": { "delivered_at": "2026-11-10", "return_window_days": 7 },
+      "expected": { "return_window_closes_at": "2026-11-17" }
+    },
+    {
+      "id": "RET-002",
+      "description": "Raising a return on the closing day is allowed; the day after is refused",
+      "status": "assumption",
+      "notes": "Docs say 'inside the window' and release escrow when the close date 'is in the past'. Assumed: the closing day itself is inside.",
+      "input": {
+        "return_window_closes_at": "2026-11-17",
+        "business_dates": ["2026-11-17", "2026-11-18"]
+      },
+      "expected": { "allowed": [true, false] }
+    },
+    {
+      "id": "RET-003",
+      "description": "Not as graded → faulty: full refund, device to refurbishment",
+      "status": "confirmed",
+      "input": { "reason": "not_as_graded", "outcome": "faulty", "total": 49350 },
+      "expected": {
+        "deduction": 0,
+        "refund": 49350,
+        "escrow_tx": "refund_full",
+        "order_status": "refunded",
+        "device_status": "in_refurbishment"
+      }
+    },
+    {
+      "id": "RET-004",
+      "description": "Not as graded → as shipped: refund less ₹300 return logistics, device relisted",
+      "status": "confirmed",
+      "input": { "reason": "not_as_graded", "outcome": "as_shipped", "total": 49350 },
+      "expected": {
+        "deduction": 300,
+        "deduction_label": "return_logistics",
+        "refund": 49050,
+        "escrow_tx": "refund_partial",
+        "device_relisted_day0": true
+      }
+    },
+    {
+      "id": "RET-005",
+      "description": "Dead on arrival confirmed: full refund",
+      "status": "confirmed",
+      "input": { "reason": "dead_on_arrival", "outcome": "doa_confirmed", "total": 49350 },
+      "expected": { "deduction": 0, "refund": 49350, "escrow_tx": "refund_full" }
+    },
+    {
+      "id": "RET-006",
+      "description": "Dead on arrival → replacement: no refund, escrow held for the replacement",
+      "status": "confirmed",
+      "input": { "reason": "dead_on_arrival", "outcome": "doa_replacement", "total": 49350 },
+      "expected": {
+        "refund": 0,
+        "order_status": "replaced",
+        "escrow_status": "held_replacement",
+        "replacement_allocated": true
+      },
+      "notes": "What happens after held_replacement is open item 8 in docs/architecture.md §20."
+    },
+    {
+      "id": "RET-007",
+      "description": "Changed mind: refund less ₹500 shipping charges",
+      "status": "confirmed",
+      "input": { "reason": "buyer_changed_mind", "outcome": "changed_mind", "total": 49350 },
+      "expected": {
+        "deduction": 500,
+        "deduction_label": "shipping_charges",
+        "refund": 48850,
+        "escrow_tx": "refund_partial"
+      }
+    },
+    {
+      "id": "RET-008",
+      "description": "An outcome the reason does not allow is rejected",
+      "status": "confirmed",
+      "input": { "reason": "buyer_changed_mind", "outcome": "faulty", "total": 49350 },
+      "expected": { "http": 400 }
+    },
+    {
+      "id": "RET-009",
+      "description": "Raising a return increments both the device and the buyer return counters (F16)",
+      "status": "confirmed",
+      "input": { "device_return_count": 0, "buyer_return_count": 2 },
+      "expected": { "device_return_count": 1, "buyer_return_count": 3 }
+    },
+    {
+      "id": "RET-010",
+      "description": "Only one open return per order",
+      "status": "confirmed",
+      "input": { "existing_open_return": true },
+      "expected": { "http": 409 }
+    }
+  ]
+}

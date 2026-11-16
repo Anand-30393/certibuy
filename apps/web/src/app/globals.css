@@ -1,0 +1,58 @@
+/* Phase 0 placeholder styles. Design tokens follow docs/frontend.md.txt §5. */
+:root {
+  --background: 216 26% 96%;
+  --card: 0 0% 100%;
+  --foreground: 220 54% 13%;
+  --primary: 221 74% 17%;
+  --warning: 35 71% 42%;
+  --border: 215 27% 91%;
+  --ring: 215 27% 91%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: 222 36% 7%;
+    --card: 221 30% 10%;
+    --foreground: 213 30% 96%;
+    --primary: 213 82% 68%;
+    --warning: 35 78% 58%;
+    --border: 220 20% 21%;
+    --ring: 220 20% 21%;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+.demo-banner {
+  padding: 0.5rem 1rem;
+  background: hsl(var(--warning));
+  color: hsl(var(--card));
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.placeholder {
+  max-width: 40rem;
+  margin: 4rem auto;
+  padding: 2rem 1rem;
+}
+
+.placeholder h1 {
+  color: hsl(var(--primary));
+  margin: 0 0 0.5rem;
+}

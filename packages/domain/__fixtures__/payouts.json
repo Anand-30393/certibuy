@@ -1,0 +1,138 @@
+{
+  "module": "custody payout plan and payout state machine",
+  "source": "docs/overview.md.txt §6; docs/automations.md.txt §3 step 2 and §5; docs/database.md.txt §8; docs/architecture.md §9.3 (D4)",
+  "rules": {
+    "plan": "Instant Cash: one instant_cash_full payout. Sell For More: advance (advance_pct %) at handover + balance created as 'due' at handover",
+    "balanceDue": "due → pending when the buyer pays, or on custody_at + balance_day, whichever comes first",
+    "attempt": "attempts += 1; success → approved then paid; failure → approved, or failed at payout_max_attempts with one payment_hold exception",
+    "invariants": "advance + balance = guaranteed; payouts never exceed guaranteed; one balance per device; a buyer cancellation never reverses a seller payout"
+  },
+  "cases": [
+    {
+      "id": "PAY-001",
+      "description": "Instant Cash handover: one full payout",
+      "status": "confirmed",
+      "input": { "option": "instant_cash", "instant_cash_amount": 47800 },
+      "expected": {
+        "payouts": [
+          {
+            "type": "instant_cash_full",
+            "amount": 47800,
+            "trigger": "custody_handover",
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    {
+      "id": "PAY-002",
+      "description": "Sell For More handover: 50 % advance plus a due balance",
+      "status": "confirmed",
+      "input": {
+        "option": "sell_for_more",
+        "guaranteed": 50800,
+        "custody_at": "2026-11-01"
+      },
+      "expected": {
+        "payouts": [
+          {
+            "type": "advance",
+            "amount": 25400,
+            "trigger": "custody_handover",
+            "status": "pending"
+          },
+          { "type": "balance", "amount": 25400, "status": "due", "due_on": "2026-11-22" }
+        ]
+      }
+    },
+    {
+      "id": "PAY-003",
+      "description": "Odd guaranteed price: advance + balance must still equal the guaranteed price",
+      "status": "assumption",
+      "notes": "Docs do not say how a fractional advance rounds. Assumed: advance = round(guaranteed × advance_pct / 100), balance = guaranteed − advance.",
+      "input": { "option": "sell_for_more", "guaranteed": 38475, "custody_at": "2026-11-01" },
+      "expected": { "advance": 19238, "balance": 19237, "sum": 38475 }
+    },
+    {
+      "id": "PAY-004",
+      "description": "Day-21 promotion: due balance becomes pending on custody_at + 21 (unsold)",
+      "status": "confirmed",
+      "input": {
+        "balance_status": "due",
+        "custody_at": "2026-11-01",
+        "business_date": "2026-11-22",
+        "buyer_paid": false
+      },
+      "expected": { "balance_status": "pending", "trigger": "day_21_unsold" }
+    },
+    {
+      "id": "PAY-005",
+      "description": "Day 20, unsold: balance stays due",
+      "status": "confirmed",
+      "input": {
+        "balance_status": "due",
+        "custody_at": "2026-11-01",
+        "business_date": "2026-11-21",
+        "buyer_paid": false
+      },
+      "expected": { "balance_status": "due" }
+    },
+    {
+      "id": "PAY-006",
+      "description": "Buyer pays before day 21: balance becomes pending immediately",
+      "status": "confirmed",
+      "input": {
+        "balance_status": "due",
+        "custody_at": "2026-11-01",
+        "business_date": "2026-11-10",
+        "buyer_paid": true
+      },
+      "expected": { "balance_status": "pending", "trigger": "buyer_paid_escrow" }
+    },
+    {
+      "id": "PAY-007",
+      "description": "Successful attempt: two writes, approved then paid",
+      "status": "confirmed",
+      "input": { "status": "pending", "attempts": 0, "simulate_payout_failure": false },
+      "expected": { "writes": ["approved", "paid"], "attempts": 1, "failure_reason": "" }
+    },
+    {
+      "id": "PAY-008",
+      "description": "First failed attempt (simulated): stays retryable as approved",
+      "status": "confirmed",
+      "input": { "status": "pending", "attempts": 0, "simulate_payout_failure": true },
+      "expected": {
+        "status": "approved",
+        "attempts": 1,
+        "failure_reason": "Account name mismatch",
+        "exception_opened": false
+      }
+    },
+    {
+      "id": "PAY-009",
+      "description": "Third failed attempt reaches the limit: failed, one payment_hold exception, seller and ops notified",
+      "status": "confirmed",
+      "input": { "status": "approved", "attempts": 2, "simulate_payout_failure": true },
+      "expected": {
+        "status": "failed",
+        "attempts": 3,
+        "exception_opened": "payment_hold",
+        "notifications": ["payout_failed", "payout_hold"]
+      }
+    },
+    {
+      "id": "PAY-010",
+      "description": "Retry of an already-paid payout is refused",
+      "status": "confirmed",
+      "input": { "command": "retryPayout", "status": "paid" },
+      "expected": { "http": 409 }
+    },
+    {
+      "id": "PAY-011",
+      "description": "Buyer cancellation after payment does not touch the seller's balance",
+      "status": "confirmed",
+      "input": { "balance_status": "pending", "event": "cancelOrder" },
+      "expected": { "balance_status": "pending", "reversed": false }
+    }
+  ]
+}

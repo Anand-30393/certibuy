@@ -1,0 +1,159 @@
+{
+  "module": "pricing / Instant Cash eligibility",
+  "source": "docs/features.md.txt S-08; docs/api.md.txt icEligibility; docs/Audit report.txt §7",
+  "rule": "Gates are checked in order and the first failure wins: paused → confidence Low → score < threshold (+launch_tighten_pts inside a launch window) → inventory_cap → per_model_cap.",
+  "cases": [
+    {
+      "id": "ICE-001",
+      "description": "Eligible: liquid model, high confidence, caps clear (matches the api.md example)",
+      "status": "confirmed",
+      "input": {
+        "ic_paused": false,
+        "confidence": "High",
+        "score": 72,
+        "launch_window": false,
+        "inventory_total": 640000,
+        "model_exposure": 132000,
+        "instant_cash_amount": 47800
+      },
+      "expected": { "eligible": true, "reasonLabel": null, "riskPct": 5, "threshold": 60 }
+    },
+    {
+      "id": "ICE-002",
+      "description": "Paused model is ineligible even when everything else passes",
+      "status": "confirmed",
+      "input": {
+        "ic_paused": true,
+        "confidence": "High",
+        "score": 90,
+        "launch_window": false,
+        "inventory_total": 0,
+        "model_exposure": 0,
+        "instant_cash_amount": 47800
+      },
+      "expected": { "eligible": false, "reasonLabel": "paused" }
+    },
+    {
+      "id": "ICE-003",
+      "description": "Gate order: paused is reported before low confidence",
+      "status": "confirmed",
+      "input": {
+        "ic_paused": true,
+        "confidence": "Low",
+        "score": 30,
+        "launch_window": false,
+        "inventory_total": 0,
+        "model_exposure": 0,
+        "instant_cash_amount": 47800
+      },
+      "expected": { "eligible": false, "reasonLabel": "paused" }
+    },
+    {
+      "id": "ICE-004",
+      "description": "Low confidence blocks Instant Cash",
+      "status": "confirmed",
+      "input": {
+        "ic_paused": false,
+        "confidence": "Low",
+        "score": 90,
+        "launch_window": false,
+        "inventory_total": 0,
+        "model_exposure": 0,
+        "instant_cash_amount": 47800
+      },
+      "expected": { "eligible": false, "reasonLabel": "low_confidence" }
+    },
+    {
+      "id": "ICE-005",
+      "description": "Medium confidence does not block Instant Cash",
+      "status": "confirmed",
+      "input": {
+        "ic_paused": false,
+        "confidence": "Medium",
+        "score": 72,
+        "launch_window": false,
+        "inventory_total": 0,
+        "model_exposure": 0,
+        "instant_cash_amount": 47800
+      },
+      "expected": { "eligible": true, "reasonLabel": null }
+    },
+    {
+      "id": "ICE-006",
+      "description": "Score below the threshold (55 < 60)",
+      "status": "confirmed",
+      "input": {
+        "ic_paused": false,
+        "confidence": "High",
+        "score": 55,
+        "launch_window": false,
+        "inventory_total": 0,
+        "model_exposure": 0,
+        "instant_cash_amount": 47800
+      },
+      "expected": { "eligible": false, "reasonLabel": "low_liquidity" }
+    },
+    {
+      "id": "ICE-007",
+      "description": "Score exactly at the threshold passes (≥ 60)",
+      "status": "confirmed",
+      "input": {
+        "ic_paused": false,
+        "confidence": "High",
+        "score": 60,
+        "launch_window": false,
+        "inventory_total": 0,
+        "model_exposure": 0,
+        "instant_cash_amount": 47800
+      },
+      "expected": { "eligible": true, "reasonLabel": null, "riskPct": 12 }
+    },
+    {
+      "id": "ICE-008",
+      "description": "Inside a successor launch window the threshold tightens to 70, so 65 fails",
+      "status": "confirmed",
+      "input": {
+        "ic_paused": false,
+        "confidence": "High",
+        "score": 65,
+        "launch_window": true,
+        "inventory_total": 0,
+        "model_exposure": 0,
+        "instant_cash_amount": 47800
+      },
+      "expected": { "eligible": false, "reasonLabel": "launch_window", "threshold": 70 }
+    },
+    {
+      "id": "ICE-009",
+      "description": "Portfolio cap: buying would take owned stock above ₹1.5 crore",
+      "status": "assumption",
+      "notes": "Docs name the cap but not the comparison. Assumed: inventory_total + instant_cash_amount > inventory_cap fails.",
+      "input": {
+        "ic_paused": false,
+        "confidence": "High",
+        "score": 72,
+        "launch_window": false,
+        "inventory_total": 14990000,
+        "model_exposure": 0,
+        "instant_cash_amount": 47800
+      },
+      "expected": { "eligible": false, "reasonLabel": "inventory_cap" }
+    },
+    {
+      "id": "ICE-010",
+      "description": "Per-model cap: buying would take this model's exposure above ₹15 lakh",
+      "status": "assumption",
+      "notes": "Assumed: model_exposure + instant_cash_amount > per_model_cap fails.",
+      "input": {
+        "ic_paused": false,
+        "confidence": "High",
+        "score": 72,
+        "launch_window": false,
+        "inventory_total": 640000,
+        "model_exposure": 1460000,
+        "instant_cash_amount": 47800
+      },
+      "expected": { "eligible": false, "reasonLabel": "model_cap" }
+    }
+  ]
+}

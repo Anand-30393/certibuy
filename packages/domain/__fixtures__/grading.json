@@ -1,0 +1,260 @@
+{
+  "module": "grading (automatic estimate)",
+  "source": "docs/ai-integration.md.txt §3–§5",
+  "rules": {
+    "rejectOrder": [
+      "blacklisted_imei",
+      "activation_lock",
+      "water_exposure",
+      "other_shop_repair",
+      "invalid_imei"
+    ],
+    "battery": "A ≥ battery_a_min (90), B ≥ 85, C ≥ 80, else D",
+    "function": "A when every check passes, otherwise D",
+    "estimate": "worst(battery, cosmetic, function)",
+    "confidence": "Low if repaired = not_sure; Medium if retake_count > photo_retake_medium; else High (numeric 45 / 70 / 90)",
+    "band": "Low → [better, estimate, worse]; A → [A,B]; D → [C,D]; otherwise [better, estimate]",
+    "price": "The grader never returns a price"
+  },
+  "cases": [
+    {
+      "id": "GRD-001",
+      "description": "Like-new device: everything A, high confidence",
+      "status": "confirmed",
+      "input": {
+        "battery_health": 92,
+        "declared_cosmetic": "A",
+        "failed_checks": 0,
+        "repaired": "no",
+        "retake_count": 0
+      },
+      "expected": {
+        "battery_grade": "A",
+        "cosmetic_grade": "A",
+        "function_grade": "A",
+        "estimate": "A",
+        "confidence": "High",
+        "confidence_value": 90,
+        "band": ["A", "B"]
+      }
+    },
+    {
+      "id": "GRD-002",
+      "description": "Battery 87 % gives B; worst of three is B",
+      "status": "confirmed",
+      "input": {
+        "battery_health": 87,
+        "declared_cosmetic": "A",
+        "failed_checks": 0,
+        "repaired": "no",
+        "retake_count": 0
+      },
+      "expected": {
+        "battery_grade": "B",
+        "estimate": "B",
+        "confidence": "High",
+        "band": ["A", "B"]
+      }
+    },
+    {
+      "id": "GRD-003",
+      "description": "Battery boundary: exactly 90 is A, exactly 85 is B, exactly 80 is C, 79 is D",
+      "status": "confirmed",
+      "input": { "battery_health_values": [90, 85, 80, 79] },
+      "expected": { "battery_grades": ["A", "B", "C", "D"] }
+    },
+    {
+      "id": "GRD-004",
+      "description": "Declared cosmetic C sets the estimate to C",
+      "status": "confirmed",
+      "input": {
+        "battery_health": 95,
+        "declared_cosmetic": "C",
+        "failed_checks": 0,
+        "repaired": "authorised",
+        "retake_count": 0
+      },
+      "expected": { "estimate": "C", "confidence": "High", "band": ["B", "C"] }
+    },
+    {
+      "id": "GRD-005",
+      "description": "A single failed self-check makes the function grade D (stricter than the technician's mapping)",
+      "status": "confirmed",
+      "input": {
+        "battery_health": 95,
+        "declared_cosmetic": "A",
+        "failed_checks": 1,
+        "repaired": "no",
+        "retake_count": 0
+      },
+      "expected": { "function_grade": "D", "estimate": "D", "band": ["C", "D"] }
+    },
+    {
+      "id": "GRD-006",
+      "description": "Two retakes (> 1) lower confidence to Medium; band shape unchanged",
+      "status": "confirmed",
+      "input": {
+        "battery_health": 88,
+        "declared_cosmetic": "B",
+        "failed_checks": 0,
+        "repaired": "no",
+        "retake_count": 2
+      },
+      "expected": {
+        "estimate": "B",
+        "confidence": "Medium",
+        "confidence_value": 70,
+        "band": ["A", "B"]
+      }
+    },
+    {
+      "id": "GRD-007",
+      "description": "Exactly one retake keeps confidence High (not greater than the threshold)",
+      "status": "confirmed",
+      "input": {
+        "battery_health": 88,
+        "declared_cosmetic": "B",
+        "failed_checks": 0,
+        "repaired": "no",
+        "retake_count": 1
+      },
+      "expected": { "confidence": "High" }
+    },
+    {
+      "id": "GRD-008",
+      "description": "Unsure repair history gives Low confidence and a three-grade band",
+      "status": "confirmed",
+      "input": {
+        "battery_health": 88,
+        "declared_cosmetic": "B",
+        "failed_checks": 0,
+        "repaired": "not_sure",
+        "retake_count": 0
+      },
+      "expected": {
+        "estimate": "B",
+        "confidence": "Low",
+        "confidence_value": 45,
+        "band": ["A", "B", "C"]
+      }
+    },
+    {
+      "id": "GRD-009",
+      "description": "Low confidence with estimate A is clamped to [A,B]",
+      "status": "assumption",
+      "notes": "Docs do not say how the three-wide Low band behaves at A or D. Assumed: clamp to valid grades, so A → [A,B] and D → [C,D].",
+      "input": {
+        "battery_health": 95,
+        "declared_cosmetic": "A",
+        "failed_checks": 0,
+        "repaired": "not_sure",
+        "retake_count": 0
+      },
+      "expected": { "estimate": "A", "confidence": "Low", "band": ["A", "B"] }
+    },
+    {
+      "id": "GRD-010",
+      "description": "Reject: blacklisted IMEI",
+      "status": "confirmed",
+      "input": {
+        "imei": "490154203237518",
+        "blacklisted": true,
+        "activation_lock": "off",
+        "water_exposure": false,
+        "repaired": "no"
+      },
+      "expected": { "rejected": true, "code": "blacklisted_imei" }
+    },
+    {
+      "id": "GRD-011",
+      "description": "Reject: activation lock still on",
+      "status": "confirmed",
+      "input": {
+        "imei": "490154203237518",
+        "blacklisted": false,
+        "activation_lock": "on",
+        "water_exposure": false,
+        "repaired": "no"
+      },
+      "expected": { "rejected": true, "code": "activation_lock" }
+    },
+    {
+      "id": "GRD-012",
+      "description": "Reject order: water exposure is reported before a third-party repair",
+      "status": "confirmed",
+      "input": {
+        "imei": "490154203237518",
+        "blacklisted": false,
+        "activation_lock": "off",
+        "water_exposure": true,
+        "repaired": "other_shop"
+      },
+      "expected": { "rejected": true, "code": "water_exposure" }
+    },
+    {
+      "id": "GRD-013",
+      "description": "Reject: repair at a non-authorised shop",
+      "status": "confirmed",
+      "input": {
+        "imei": "490154203237518",
+        "blacklisted": false,
+        "activation_lock": "off",
+        "water_exposure": false,
+        "repaired": "other_shop"
+      },
+      "expected": { "rejected": true, "code": "other_shop_repair" }
+    },
+    {
+      "id": "GRD-014",
+      "description": "Reject: IMEI fails the Luhn check",
+      "status": "confirmed",
+      "input": {
+        "imei": "490154203237519",
+        "blacklisted": false,
+        "activation_lock": "off",
+        "water_exposure": false,
+        "repaired": "no"
+      },
+      "expected": { "rejected": true, "code": "invalid_imei" }
+    },
+    {
+      "id": "GRD-015",
+      "description": "Reject: IMEI is not 15 digits",
+      "status": "confirmed",
+      "input": {
+        "imei": "49015420323751",
+        "blacklisted": false,
+        "activation_lock": "off",
+        "water_exposure": false,
+        "repaired": "no"
+      },
+      "expected": { "rejected": true, "code": "invalid_imei" }
+    },
+    {
+      "id": "GRD-016",
+      "description": "Reject order: a blacklisted IMEI is reported before an invalid one",
+      "status": "confirmed",
+      "input": {
+        "imei": "490154203237519",
+        "blacklisted": true,
+        "activation_lock": "off",
+        "water_exposure": false,
+        "repaired": "no"
+      },
+      "expected": { "rejected": true, "code": "blacklisted_imei" }
+    },
+    {
+      "id": "GRD-017",
+      "description": "Valid IMEI (15 digits, Luhn passes) and no defects: not rejected",
+      "status": "confirmed",
+      "input": {
+        "imei": "490154203237518",
+        "blacklisted": false,
+        "activation_lock": "off",
+        "water_exposure": false,
+        "repaired": "authorised"
+      },
+      "expected": { "rejected": false }
+    }
+  ]
+}
