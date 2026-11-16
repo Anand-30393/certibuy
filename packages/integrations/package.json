@@ -5,6 +5,11 @@
   "type": "module",
   "description": "Ports and simulated adapters (payments, payouts, courier, grading, IMEI, mail) plus the Supabase auth and storage adapters.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./supabase": "./src/supabase/index.ts"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.0"
   }
 }

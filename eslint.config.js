@@ -10,7 +10,14 @@ const FRAMEWORK_IMPORTS = ["next", "next/*", "react", "react/*", "react-dom", "r
 const SUPABASE_IMPORTS = ["@supabase/*"];
 
 export default defineConfig([
-  globalIgnores(["**/node_modules/**", "**/.next/**", "**/dist/**", "**/coverage/**", "docs/**"]),
+  globalIgnores([
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "docs/**",
+    "packages/db/src/generated/**",
+  ]),
   js.configs.recommended,
   ...tseslint.configs.recommended,
 

@@ -6,5 +6,8 @@
   "description": "Zod schemas for every command and view, enums, and status labels and tones.",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
   }
 }

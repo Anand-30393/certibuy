@@ -27,3 +27,6 @@ Thumbs.db
 
 # Next.js generated types
 next-env.d.ts
+
+# Prisma generated client
+packages/db/src/generated/

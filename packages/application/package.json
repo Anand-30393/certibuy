@@ -6,5 +6,11 @@
   "description": "Use-cases: commands, read models, jobs, policies and notify(). No Next.js or Supabase imports.",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@certibuy/contracts": "workspace:*",
+    "@certibuy/db": "workspace:*",
+    "@certibuy/domain": "workspace:*",
+    "zod": "^4.6.7"
   }
 }

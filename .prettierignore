@@ -10,3 +10,6 @@ pnpm-lock.yaml
 .next/
 dist/
 coverage/
+
+# Generated
+packages/db/src/generated/
