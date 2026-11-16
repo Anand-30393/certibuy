@@ -25,6 +25,9 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          # setup-node v5 auto-caches when packageManager is set, which needs pnpm
+          # before corepack has enabled it, so turn that auto-cache off.
+          package-manager-cache: false
 
       - name: Enable pnpm (corepack, version pinned in package.json)
         run: corepack enable
