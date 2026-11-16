@@ -16,7 +16,12 @@
         "model_exposure": 132000,
         "instant_cash_amount": 47800
       },
-      "expected": { "eligible": true, "reasonLabel": null, "riskPct": 5, "threshold": 60 }
+      "expected": {
+        "eligible": true,
+        "reasonLabel": null,
+        "riskPct": 5,
+        "threshold": 60
+      }
     },
     {
       "id": "ICE-002",
@@ -31,7 +36,10 @@
         "model_exposure": 0,
         "instant_cash_amount": 47800
       },
-      "expected": { "eligible": false, "reasonLabel": "paused" }
+      "expected": {
+        "eligible": false,
+        "reasonLabel": "paused"
+      }
     },
     {
       "id": "ICE-003",
@@ -46,7 +54,10 @@
         "model_exposure": 0,
         "instant_cash_amount": 47800
       },
-      "expected": { "eligible": false, "reasonLabel": "paused" }
+      "expected": {
+        "eligible": false,
+        "reasonLabel": "paused"
+      }
     },
     {
       "id": "ICE-004",
@@ -61,7 +72,10 @@
         "model_exposure": 0,
         "instant_cash_amount": 47800
       },
-      "expected": { "eligible": false, "reasonLabel": "low_confidence" }
+      "expected": {
+        "eligible": false,
+        "reasonLabel": "low_confidence"
+      }
     },
     {
       "id": "ICE-005",
@@ -76,7 +90,10 @@
         "model_exposure": 0,
         "instant_cash_amount": 47800
       },
-      "expected": { "eligible": true, "reasonLabel": null }
+      "expected": {
+        "eligible": true,
+        "reasonLabel": null
+      }
     },
     {
       "id": "ICE-006",
@@ -91,7 +108,10 @@
         "model_exposure": 0,
         "instant_cash_amount": 47800
       },
-      "expected": { "eligible": false, "reasonLabel": "low_liquidity" }
+      "expected": {
+        "eligible": false,
+        "reasonLabel": "low_liquidity"
+      }
     },
     {
       "id": "ICE-007",
@@ -106,7 +126,11 @@
         "model_exposure": 0,
         "instant_cash_amount": 47800
       },
-      "expected": { "eligible": true, "reasonLabel": null, "riskPct": 12 }
+      "expected": {
+        "eligible": true,
+        "reasonLabel": null,
+        "riskPct": 12
+      }
     },
     {
       "id": "ICE-008",
@@ -121,13 +145,17 @@
         "model_exposure": 0,
         "instant_cash_amount": 47800
       },
-      "expected": { "eligible": false, "reasonLabel": "launch_window", "threshold": 70 }
+      "expected": {
+        "eligible": false,
+        "reasonLabel": "launch_window",
+        "threshold": 70
+      }
     },
     {
       "id": "ICE-009",
       "description": "Portfolio cap: buying would take owned stock above ₹1.5 crore",
-      "status": "assumption",
-      "notes": "Docs name the cap but not the comparison. Assumed: inventory_total + instant_cash_amount > inventory_cap fails.",
+      "status": "confirmed",
+      "notes": "Confirmed by the project owner on 16 November 2026: fails when inventory_total + instant_cash_amount > inventory_cap.",
       "input": {
         "ic_paused": false,
         "confidence": "High",
@@ -137,13 +165,16 @@
         "model_exposure": 0,
         "instant_cash_amount": 47800
       },
-      "expected": { "eligible": false, "reasonLabel": "inventory_cap" }
+      "expected": {
+        "eligible": false,
+        "reasonLabel": "inventory_cap"
+      }
     },
     {
       "id": "ICE-010",
       "description": "Per-model cap: buying would take this model's exposure above ₹15 lakh",
-      "status": "assumption",
-      "notes": "Assumed: model_exposure + instant_cash_amount > per_model_cap fails.",
+      "status": "confirmed",
+      "notes": "Confirmed by the project owner on 16 November 2026: fails when model_exposure + instant_cash_amount > per_model_cap.",
       "input": {
         "ic_paused": false,
         "confidence": "High",
@@ -153,7 +184,10 @@
         "model_exposure": 1460000,
         "instant_cash_amount": 47800
       },
-      "expected": { "eligible": false, "reasonLabel": "model_cap" }
+      "expected": {
+        "eligible": false,
+        "reasonLabel": "model_cap"
+      }
     }
   ]
 }

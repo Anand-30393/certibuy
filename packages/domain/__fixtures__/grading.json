@@ -60,8 +60,12 @@
       "id": "GRD-003",
       "description": "Battery boundary: exactly 90 is A, exactly 85 is B, exactly 80 is C, 79 is D",
       "status": "confirmed",
-      "input": { "battery_health_values": [90, 85, 80, 79] },
-      "expected": { "battery_grades": ["A", "B", "C", "D"] }
+      "input": {
+        "battery_health_values": [90, 85, 80, 79]
+      },
+      "expected": {
+        "battery_grades": ["A", "B", "C", "D"]
+      }
     },
     {
       "id": "GRD-004",
@@ -74,7 +78,11 @@
         "repaired": "authorised",
         "retake_count": 0
       },
-      "expected": { "estimate": "C", "confidence": "High", "band": ["B", "C"] }
+      "expected": {
+        "estimate": "C",
+        "confidence": "High",
+        "band": ["B", "C"]
+      }
     },
     {
       "id": "GRD-005",
@@ -87,7 +95,11 @@
         "repaired": "no",
         "retake_count": 0
       },
-      "expected": { "function_grade": "D", "estimate": "D", "band": ["C", "D"] }
+      "expected": {
+        "function_grade": "D",
+        "estimate": "D",
+        "band": ["C", "D"]
+      }
     },
     {
       "id": "GRD-006",
@@ -118,7 +130,9 @@
         "repaired": "no",
         "retake_count": 1
       },
-      "expected": { "confidence": "High" }
+      "expected": {
+        "confidence": "High"
+      }
     },
     {
       "id": "GRD-008",
@@ -141,8 +155,8 @@
     {
       "id": "GRD-009",
       "description": "Low confidence with estimate A is clamped to [A,B]",
-      "status": "assumption",
-      "notes": "Docs do not say how the three-wide Low band behaves at A or D. Assumed: clamp to valid grades, so A → [A,B] and D → [C,D].",
+      "status": "confirmed",
+      "notes": "Confirmed by the project owner on 16 November 2026: a Low-confidence band at A or D is clamped to two grades ([A,B] or [C,D]).",
       "input": {
         "battery_health": 95,
         "declared_cosmetic": "A",
@@ -150,7 +164,11 @@
         "repaired": "not_sure",
         "retake_count": 0
       },
-      "expected": { "estimate": "A", "confidence": "Low", "band": ["A", "B"] }
+      "expected": {
+        "estimate": "A",
+        "confidence": "Low",
+        "band": ["A", "B"]
+      }
     },
     {
       "id": "GRD-010",
@@ -163,7 +181,10 @@
         "water_exposure": false,
         "repaired": "no"
       },
-      "expected": { "rejected": true, "code": "blacklisted_imei" }
+      "expected": {
+        "rejected": true,
+        "code": "blacklisted_imei"
+      }
     },
     {
       "id": "GRD-011",
@@ -176,7 +197,10 @@
         "water_exposure": false,
         "repaired": "no"
       },
-      "expected": { "rejected": true, "code": "activation_lock" }
+      "expected": {
+        "rejected": true,
+        "code": "activation_lock"
+      }
     },
     {
       "id": "GRD-012",
@@ -189,7 +213,10 @@
         "water_exposure": true,
         "repaired": "other_shop"
       },
-      "expected": { "rejected": true, "code": "water_exposure" }
+      "expected": {
+        "rejected": true,
+        "code": "water_exposure"
+      }
     },
     {
       "id": "GRD-013",
@@ -202,7 +229,10 @@
         "water_exposure": false,
         "repaired": "other_shop"
       },
-      "expected": { "rejected": true, "code": "other_shop_repair" }
+      "expected": {
+        "rejected": true,
+        "code": "other_shop_repair"
+      }
     },
     {
       "id": "GRD-014",
@@ -215,7 +245,10 @@
         "water_exposure": false,
         "repaired": "no"
       },
-      "expected": { "rejected": true, "code": "invalid_imei" }
+      "expected": {
+        "rejected": true,
+        "code": "invalid_imei"
+      }
     },
     {
       "id": "GRD-015",
@@ -228,7 +261,10 @@
         "water_exposure": false,
         "repaired": "no"
       },
-      "expected": { "rejected": true, "code": "invalid_imei" }
+      "expected": {
+        "rejected": true,
+        "code": "invalid_imei"
+      }
     },
     {
       "id": "GRD-016",
@@ -241,7 +277,10 @@
         "water_exposure": false,
         "repaired": "no"
       },
-      "expected": { "rejected": true, "code": "blacklisted_imei" }
+      "expected": {
+        "rejected": true,
+        "code": "blacklisted_imei"
+      }
     },
     {
       "id": "GRD-017",
@@ -254,7 +293,9 @@
         "water_exposure": false,
         "repaired": "authorised"
       },
-      "expected": { "rejected": false }
+      "expected": {
+        "rejected": false
+      }
     }
   ]
 }

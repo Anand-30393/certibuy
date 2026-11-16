@@ -11,8 +11,16 @@
       "id": "PRC-001",
       "description": "Grade A uses its own market price",
       "status": "confirmed",
-      "input": { "fn": "gradePrice", "grade": "A", "model": { "market_price_a": 60000 } },
-      "expected": { "market": 60000 }
+      "input": {
+        "fn": "gradePrice",
+        "grade": "A",
+        "model": {
+          "market_price_a": 60000
+        }
+      },
+      "expected": {
+        "market": 60000
+      }
     },
     {
       "id": "PRC-002",
@@ -21,9 +29,14 @@
       "input": {
         "fn": "gradePrice",
         "grade": "B",
-        "model": { "market_price_a": 50000, "market_price_b": null }
+        "model": {
+          "market_price_a": 50000,
+          "market_price_b": null
+        }
       },
-      "expected": { "market": 45500 }
+      "expected": {
+        "market": 45500
+      }
     },
     {
       "id": "PRC-003",
@@ -32,9 +45,14 @@
       "input": {
         "fn": "gradePrice",
         "grade": "C",
-        "model": { "market_price_a": 50000, "market_price_c": null }
+        "model": {
+          "market_price_a": 50000,
+          "market_price_c": null
+        }
       },
-      "expected": { "market": 41000 }
+      "expected": {
+        "market": 41000
+      }
     },
     {
       "id": "PRC-004",
@@ -43,9 +61,14 @@
       "input": {
         "fn": "gradePrice",
         "grade": "D",
-        "model": { "market_price_a": 50000, "market_price_d": null }
+        "model": {
+          "market_price_a": 50000,
+          "market_price_d": null
+        }
       },
-      "expected": { "market": 30000 }
+      "expected": {
+        "market": 30000
+      }
     },
     {
       "id": "PRC-005",
@@ -54,15 +77,24 @@
       "input": {
         "fn": "gradePrice",
         "grade": "B",
-        "model": { "market_price_a": 50000, "market_price_b": 47000 }
+        "model": {
+          "market_price_a": 50000,
+          "market_price_b": 47000
+        }
       },
-      "expected": { "market": 47000 }
+      "expected": {
+        "market": 47000
+      }
     },
     {
       "id": "PRC-006",
       "description": "Offer at market ₹60,000, fast-selling risk 5 %",
       "status": "confirmed",
-      "input": { "fn": "offer", "market": 60000, "risk_pct": 5 },
+      "input": {
+        "fn": "offer",
+        "market": 60000,
+        "risk_pct": 5
+      },
       "expected": {
         "commission": 9000,
         "inspection_fee": 200,
@@ -75,65 +107,118 @@
       "id": "PRC-007",
       "description": "Offer at market ₹60,000, steady risk 12 %",
       "status": "confirmed",
-      "input": { "fn": "offer", "market": 60000, "risk_pct": 12 },
-      "expected": { "risk": 7200, "guaranteed": 50800, "instant_cash": 43600 }
+      "input": {
+        "fn": "offer",
+        "market": 60000,
+        "risk_pct": 12
+      },
+      "expected": {
+        "risk": 7200,
+        "guaranteed": 50800,
+        "instant_cash": 43600
+      }
     },
     {
       "id": "PRC-008",
       "description": "Offer at the grade-B fallback market ₹45,500, risk 12 %",
       "status": "confirmed",
-      "input": { "fn": "offer", "market": 45500, "risk_pct": 12 },
-      "expected": { "risk": 5460, "guaranteed": 38475, "instant_cash": 33015 }
+      "input": {
+        "fn": "offer",
+        "market": 45500,
+        "risk_pct": 12
+      },
+      "expected": {
+        "risk": 5460,
+        "guaranteed": 38475,
+        "instant_cash": 33015
+      }
     },
     {
       "id": "PRC-009",
       "description": "Offer at market ₹30,000 (grade-D fallback), risk 5 %",
       "status": "confirmed",
-      "input": { "fn": "offer", "market": 30000, "risk_pct": 5 },
-      "expected": { "guaranteed": 25300, "instant_cash": 23800 }
+      "input": {
+        "fn": "offer",
+        "market": 30000,
+        "risk_pct": 5
+      },
+      "expected": {
+        "guaranteed": 25300,
+        "instant_cash": 23800
+      }
     },
     {
       "id": "PRC-010",
       "description": "Risk tier: score at or above threshold + near_band (60 + 10) is fast-selling",
       "status": "confirmed",
-      "input": { "fn": "riskPct", "score": 72 },
-      "expected": { "risk_pct": 5 }
+      "input": {
+        "fn": "riskPct",
+        "score": 72
+      },
+      "expected": {
+        "risk_pct": 5
+      }
     },
     {
       "id": "PRC-011",
       "description": "Risk tier: score below threshold + near_band is steady",
       "status": "confirmed",
-      "input": { "fn": "riskPct", "score": 65 },
-      "expected": { "risk_pct": 12 }
+      "input": {
+        "fn": "riskPct",
+        "score": 65
+      },
+      "expected": {
+        "risk_pct": 12
+      }
     },
     {
       "id": "PRC-012",
       "description": "Risk tier boundary: score exactly 70 is fast-selling (≥)",
       "status": "confirmed",
-      "input": { "fn": "riskPct", "score": 70 },
-      "expected": { "risk_pct": 5 }
+      "input": {
+        "fn": "riskPct",
+        "score": 70
+      },
+      "expected": {
+        "risk_pct": 5
+      }
     },
     {
       "id": "PRC-013",
       "description": "Price band: a model inside ₹20,000–₹1,50,000 is selectable",
       "status": "confirmed",
-      "input": { "fn": "inPriceBand", "market_price_a": 60000 },
-      "expected": { "selectable": true }
+      "input": {
+        "fn": "inPriceBand",
+        "market_price_a": 60000
+      },
+      "expected": {
+        "selectable": true
+      }
     },
     {
       "id": "PRC-014",
       "description": "Price band: a model below ₹20,000 is shown disabled",
-      "status": "assumption",
-      "notes": "Docs say models outside the band are disabled; they do not say which price is compared. Assumed: market_price_a, inclusive bounds.",
-      "input": { "fn": "inPriceBand", "market_price_a": 18000 },
-      "expected": { "selectable": false }
+      "status": "confirmed",
+      "notes": "Confirmed by the project owner on 16 November 2026: the price band compares market_price_a with inclusive limits.",
+      "input": {
+        "fn": "inPriceBand",
+        "market_price_a": 18000
+      },
+      "expected": {
+        "selectable": false
+      }
     },
     {
       "id": "PRC-015",
       "description": "Offer expiry is offer_expiry_days after the business date it was made",
       "status": "confirmed",
-      "input": { "fn": "offerExpiry", "business_date": "2026-11-16" },
-      "expected": { "expires_on": "2026-11-23" }
+      "input": {
+        "fn": "offerExpiry",
+        "business_date": "2026-11-16"
+      },
+      "expected": {
+        "expires_on": "2026-11-23"
+      }
     }
   ]
 }

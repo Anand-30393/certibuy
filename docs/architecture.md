@@ -603,7 +603,7 @@ An optional free Vercel cron (about once a day, authenticated with `CRON_SECRET`
 
 | Level | Tool (all free) | What it proves |
 |---|---|---|
-| Domain unit tests | Vitest + golden tables + fast-check | Pricing, offer, grading bands, ladder (with the B2B floor), payout machine, return and cancellation maths, and business date match **golden cases written from the docs** (e.g. the `api.md.txt` example: guaranteed ₹47,000, Instant Cash ₹42,500). Invariants: payouts ≤ guaranteed price, sum of escrow movements = order total (refund included), valid band shapes |
+| Domain unit tests | Vitest + golden tables + fast-check | Pricing, offer, grading bands, ladder (with the B2B floor), payout machine, return and cancellation maths, and business date match **golden cases written from the docs** (e.g. golden case PRC-006: market ₹60,000 → guaranteed ₹50,800, Instant Cash ₹47,800 at 5 % risk; and the `automations.md.txt` ladder example ₹36,000 → ₹33,480 on day 15). Invariants: payouts ≤ guaranteed price, sum of escrow movements = order total (refund included), valid band shapes |
 | Contract tests | Vitest + **plain PostgreSQL in Docker** with the `current_user_id()` shim | Each command: validation, auth, happy path, a business conflict, idempotent retry. Running on plain Postgres **proves the schema is portable** |
 | Access tests | Same | Seller A can't read seller B's data. A technician can't see another hub. **No buyer payload contains a seller ID, cost or floor** (automatic forbidden-field scan). Staff commands without MFA return 403 |
 | Concurrency tests | Same | Two simultaneous `placeOrder` calls give one order. Cancel vs dispatch race gives one winner. A double-clicked job gives one money movement |
@@ -704,6 +704,18 @@ Documentation alignment (Phase 0):
 |---|---|---|
 | 6 | Topical docs updated to match these decisions: `database`, `api`, `features`, `notifications`, `overview`, plus targeted updates to `roles`, `automations`, `vendor-architecture`, `frontend`, `tech-stack`, `deployment` and `CLAUDE.md`. `Audit report.txt` keeps its content (only its internal links were updated, item 7): it records the Base44 baseline | Done (14 November 2026) |
 | 7 | D6: make the links in `CLAUDE.md` and across the docs resolve. Resolved by keeping the existing `.md.txt` filenames and updating every internal link to match (the audit link now points to `docs/Audit report.txt`); all links verified | Resolved (14 November 2026) |
+
+Rule details confirmed by the project owner on 16 November 2026 (golden cases in `packages/domain/__fixtures__/`, all now `confirmed`):
+
+| Rule | Confirmed behaviour | Case |
+|---|---|---|
+| Sell For More advance rounding | `advance = round(guaranteed × advance_pct / 100)`, `balance = guaranteed − advance` (₹38,475 → ₹19,238 + ₹19,237) | PAY-003 |
+| Instant Cash caps | Fails when current stock (or model exposure) plus the new purchase would exceed the cap | ICE-009, ICE-010 |
+| Price band | Compares the model's grade-A market price, limits inclusive | PRC-014 |
+| Return window | The closing day itself is inside the window | RET-002 |
+| Grade better than the band | The quoted price stands (verdict `inside`) | INS-008 |
+| Low-confidence band at A or D | Clamped to two grades: `[A,B]` or `[C,D]` | GRD-009 |
+| Warranty add-on on grade D | Requesting it is **rejected** (`400`), nothing written | ORD-003 |
 
 Open items from the consistency review (revision 4):
 

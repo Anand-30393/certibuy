@@ -17,6 +17,8 @@ Common conventions: ids are opaque strings; money is integer rupees; dates are `
 
 ---
 
+**Example amounts.** The money examples below follow one scenario computed with the documented formulas and default `Settings`: a model with grade-A market price ₹60,000 (grade B ₹54,600 and grade C ₹49,200 by the grade factors), AI band `["A","B"]`, fast-selling risk 5 %. Guaranteed = ₹50,800, Instant Cash = ₹47,800 (golden case PRC-006 in `packages/domain/__fixtures__/pricing.json`). They are illustrations, not test data; the golden cases are the reference.
+
 ## 1. Commands — selling
 
 ### `gradeSubmission` — S-06
@@ -27,8 +29,8 @@ First verifies on the server that every required photo for the category (8 phone
 ```json
 { "ok": true, "assessment": {...}, "band": ["A","B"], "confidence": "High",
   "factors": ["Battery health 92% → grade A", "..."],
-  "valueRange": {"low": 43000, "high": 47000},
-  "offer": {...}, "guaranteedPrice": 47000, "instantCashAmount": 42500 }
+  "valueRange": {"low": 46210, "high": 50800},
+  "offer": {...}, "guaranteedPrice": 50800, "instantCashAmount": 47800 }
 ```
 
 ### `computeOffer` — S-07
@@ -61,8 +63,8 @@ Validates: payout option chosen, offer exists, hub active, date within the next 
 Requires a confirmed grade. If an active offer already prices exactly that grade it is **reused** (`reused:true`, idempotent). Otherwise prices `[finalGrade]` and writes `quoted_amount` / `revised_amount` on the report.
 
 ```json
-{ "ok": true, "reused": false, "offerId": "...", "quoted": 47000, "revised": 41000,
-  "option": "sell_for_more", "finalGrade": "B", "icEligible": false, "icReason": "low_liquidity" }
+{ "ok": true, "reused": false, "offerId": "...", "quoted": 50800, "revised": 41620,
+  "option": "sell_for_more", "finalGrade": "C", "icEligible": false, "icReason": "low_liquidity" }
 ```
 
 ### `acceptRevised` — S-14
@@ -92,7 +94,7 @@ Validates: identity step done, every checklist item answered, battery 50–100, 
 { "ok": true, "reportId": "...", "finalGrade": "B",
   "componentGrades": {"battery":"A","cosmetic":"B","functions":"A"},
   "worstKey": "cosmetic", "band": ["A","B"], "verdict": "inside",
-  "quoted": 47000, "revised": 47000 }
+  "quoted": 50800, "revised": 50800 }
 ```
 
 ## 3. Commands — custody & handover
@@ -103,14 +105,14 @@ Preconditions: submission `accepted`, report sealed, bag sealed, tag matches `^C
 
 ```json
 { "ok": true, "deviceId": "...", "listingId": "...", "payoutId": "...",
-  "paid": 41000, "option": "sell_for_more", "listingPrice": 47000, "warrantyMonths": 12 }
+  "paid": 25400, "option": "sell_for_more", "listingPrice": 54600, "warrantyMonths": 12 }
 ```
 
 ## 4. Commands — buying
 
 ### `placeOrder` — B-05
 `POST { listingId, deliveryName, deliveryPhone, deliveryAddress, paymentMethod: "upi"|"card"|"netbanking", warrantyAddon?: boolean, declined?: boolean }` · signed-in customer.
-Validates name ≥ 2 chars, a valid 10-digit Indian mobile (leading `91` normalised), address ≥ 10 chars, listing `active` (expired holds on that listing are cleared first), device owned by CertiBuy. Price comes from the listing (override first), plus the add-on when allowed (never on a 0-month / grade-D listing). `declined:true` returns `{declined:true, total}` and writes nothing.
+Validates name ≥ 2 chars, a valid 10-digit Indian mobile (leading `91` normalised), address ≥ 10 chars, listing `active` (expired holds on that listing are cleared first), device owned by CertiBuy. Price comes from the listing (override first), plus the add-on when allowed. Requesting the warranty add-on on a grade-D (0-month warranty) listing is **rejected** with `400 "The warranty add-on isn't available for this device."` and nothing is written. `declined:true` returns `{declined:true, total}` and writes nothing.
 
 On success (instant payment mode, the default): `Order` (`paid`, escrow `hold`), `PaymentIntent` (simulated), `EscrowTransaction(hold)`, listing → `reserved` (`reserved_days:1`), device → `reserved`, the Sell For More balance payout becomes payable, notifications, activity log.
 
