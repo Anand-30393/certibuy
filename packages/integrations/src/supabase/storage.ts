@@ -36,5 +36,15 @@ export function createSupabaseStorage(): StoragePort {
         .createSignedUrl(path, expiresInSeconds);
       return error || !data ? null : data.signedUrl;
     },
+    async remove(bucket, paths) {
+      let removed = 0;
+      for (let i = 0; i < paths.length; i += 100) {
+        const { data } = await adminClient()
+          .storage.from(bucket)
+          .remove(paths.slice(i, i + 100));
+        removed += data?.length ?? 0;
+      }
+      return removed;
+    },
   };
 }

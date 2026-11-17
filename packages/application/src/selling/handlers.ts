@@ -29,6 +29,7 @@ import {
   formatInr,
   inPriceBand,
   isValidImei,
+  offerExpired,
   offerExpiry,
 } from "@certibuy/domain";
 import { PRIVATE_MEDIA_BUCKET } from "@certibuy/integrations";
@@ -635,7 +636,13 @@ export const acceptOffer = defineHandler({
         where: { submission_id: sub.id, status: "active", NOT: { id: offer.id } },
         data: { status: "expired" },
       });
-      await tx.offer.update({ where: { id: offer.id }, data: { status: "accepted" } });
+      // An accepted offer must be handed over within offer_expiry_days of acceptance (decision
+      // 2026-11-17); after that the daily job closes the deal.
+      const handoverBy = offerExpiry(day, s);
+      await tx.offer.update({
+        where: { id: offer.id },
+        data: { status: "accepted", expires_at: fromIsoDate(handoverBy) },
+      });
       await tx.submission.update({
         where: { id: sub.id },
         data: { status: "offer_accepted", chosen_option: input.option, consent_at: ctx.now },
@@ -667,6 +674,24 @@ export const bookInspection = defineHandler({
       }
       if (!sub.chosen_option) {
         throw new DomainError(409, "no_option", "Choose how you'd like to be paid first.");
+      }
+      const accepted = sub.offers[0];
+      if (accepted?.status === "accepted") {
+        const handoverBy = toIsoDate(accepted.expires_at);
+        if (offerExpired(handoverBy, day)) {
+          throw new DomainError(
+            409,
+            "offer_expired",
+            "Your accepted offer expired before handover. Start a new valuation for a fresh price.",
+          );
+        }
+        if (input.date > handoverBy) {
+          throw new DomainError(
+            422,
+            "after_expiry",
+            `Choose a day on or before ${handoverBy}, when your offer expires.`,
+          );
+        }
       }
       const hub = await tx.hub.findUnique({ where: { id: input.hubId } });
       if (!hub || !hub.active)

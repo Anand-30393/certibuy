@@ -13,6 +13,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e": "node --env-file=.env.local e2e/run.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "eslint . && tsc -p tsconfig.json && vitest run && prettier --check ."

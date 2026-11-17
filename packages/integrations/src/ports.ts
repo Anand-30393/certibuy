@@ -6,6 +6,8 @@ export interface StoragePort {
   exists(bucket: string, path: string): Promise<boolean>;
   /** A short-lived download URL, or null when the object is missing. */
   signedDownloadUrl(bucket: string, path: string, expiresInSeconds: number): Promise<string | null>;
+  /** Remove objects (demo reset only). Best-effort: returns how many were removed. */
+  remove(bucket: string, paths: string[]): Promise<number>;
 }
 
 export const PRIVATE_MEDIA_BUCKET = "private-media";

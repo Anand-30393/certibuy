@@ -86,6 +86,20 @@ export default defineConfig([
     },
   },
 
+  // End-to-end suites are Node scripts run against the live app (they may use Supabase directly).
+  {
+    files: ["e2e/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        process: "readonly",
+        console: "readonly",
+        fetch: "readonly",
+        Buffer: "readonly",
+        URLSearchParams: "readonly",
+      },
+    },
+  },
+
   // Keep formatting concerns in Prettier.
   prettier,
 ]);

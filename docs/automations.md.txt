@@ -72,6 +72,8 @@ For each order `delivered` whose `return_window_closes_at` is in the past, with 
 
 Any `active` offer whose `expires_at` day is before today → `expired`. If it was the submission's current offer and the submission was still `draft`/`graded`/`offer_accepted`, the submission → `abandoned` and the seller is told (`deal_abandoned`, and `offer_expiring` was sent before).
 
+Accepting an offer sets its `expires_at` to acceptance day + `offer_expiry_days` (the handover deadline). Any `accepted` offer whose deadline has passed while the device has not been handed over (`offer_accepted`/`scheduled`/`inspected`/`accepted`, no device) → `expired`, the submission → `abandoned`, live bookings → `cancelled`, and the seller is told (`deal_abandoned`). Booking a slot after the deadline and handover after it are refused.
+
 ### Step 6 — no-shows
 
 Any booking still `booked` whose date is before today → `no_show`.

@@ -50,6 +50,7 @@ export const JobsBoardView = z.object({
   simDayOffset: z.number(),
   demoMode: z.boolean(),
   demoToolsEnabled: z.boolean(),
+  isPlatformAdmin: z.boolean(),
   simulatePayoutFailure: z.boolean(),
   dailyRanToday: z.boolean(),
   runs: z.array(

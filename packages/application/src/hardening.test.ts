@@ -137,3 +137,50 @@ describe("listing reservations", () => {
     });
   });
 });
+
+describe("demo reset guards", () => {
+  const opsActor = (isPlatformAdmin: boolean): Actor => ({
+    userId: "o1",
+    email: "ops@certibuy.test",
+    fullName: "Ops",
+    appRole: "ops",
+    activeMode: null,
+    hubId: null,
+    isPlatformAdmin,
+    aal: "aal2",
+  });
+  const ctx = (a: Actor, demoMode: boolean, demoToolsEnabled: boolean) =>
+    ({
+      db: {
+        settings: { findUnique: async () => ({ ...settingsRow, demo_mode: demoMode }) },
+        profile: {
+          findMany: async () => {
+            throw new Error("must not read data before the guards pass");
+          },
+        },
+      },
+      actor: a,
+      now,
+      env: { requireStaffMfa: true, demoToolsEnabled, appPublicUrl: "http://x" },
+    }) as unknown as AppContext;
+  const confirm = { confirm: "RESET DEMO DATA" };
+
+  it("requires the exact typed confirmation", async () => {
+    await expect(
+      dispatch(commands, "resetDemoData", ctx(opsActor(true), true, true), { confirm: "reset" }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+  it("is platform-admin only", async () => {
+    await expect(
+      dispatch(commands, "resetDemoData", ctx(opsActor(false), true, true), confirm),
+    ).rejects.toMatchObject({ code: "admin_only" });
+  });
+  it("is refused when demo mode or demo tools are off", async () => {
+    await expect(
+      dispatch(commands, "resetDemoData", ctx(opsActor(true), false, true), confirm),
+    ).rejects.toMatchObject({ code: "demo_off" });
+    await expect(
+      dispatch(commands, "resetDemoData", ctx(opsActor(true), true, false), confirm),
+    ).rejects.toMatchObject({ code: "demo_off" });
+  });
+});

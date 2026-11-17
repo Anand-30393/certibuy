@@ -22,6 +22,7 @@ import {
   DomainError,
   formatInr,
   nextStepFor as verdictNextStep,
+  offerExpired,
   offerExpiry,
   payoutPlan,
   planListing,
@@ -596,7 +597,10 @@ export const acceptRevised = defineHandler({
         where: { submission_id: job.id, status: "accepted" },
         data: { status: "declined" },
       });
-      await tx.offer.update({ where: { id: offer.id }, data: { status: "accepted" } });
+      await tx.offer.update({
+        where: { id: offer.id },
+        data: { status: "accepted", expires_at: fromIsoDate(offerExpiry(today(ctx, s), s)) },
+      });
       await tx.submission.update({
         where: { id: job.id },
         data: { status: "accepted", current_offer_id: offer.id },
@@ -901,6 +905,13 @@ export const completeHandover = defineHandler({
       const agreed = agreedAmount(offer, job.chosen_option);
       if (!offer || agreed === null)
         throw new DomainError(409, "no_price", "There's no agreed price for this device.");
+      if (offerExpired(toIsoDate(offer.expires_at), today(ctx, s))) {
+        throw new DomainError(
+          409,
+          "offer_expired",
+          "The accepted offer expired before handover. The seller needs a new valuation.",
+        );
+      }
 
       const listingPlan = planListing("handover", job.final_grade, job.device_model, s);
       const device = await tx.device.create({

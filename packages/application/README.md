@@ -104,3 +104,17 @@ shared write helpers. No Next.js or Supabase imports; external effects come in t
 6. Instant Cash caps count Instant Cash already accepted but not yet handed over.
 7. Concurrent resolves of the same return are serialised (order locked before the return is read); counter
    steps lock their submission row; liquidation uses conditional writes so a checkout in between wins.
+
+## Phase 8 decisions (2026-11-17)
+
+1. An accepted offer must be handed over within `offer_expiry_days` (7) of acceptance. Accepting sets the
+   offer's `expires_at` to that deadline; booking a later slot and handover after it are refused; the daily
+   job closes the deal, cancels live bookings and tells the seller once.
+2. Ops → Jobs → Reset demo data (`resetDemoData`): platform admin, demo mode, `DEMO_TOOLS_ENABLED` and the
+   typed phrase `RESET DEMO DATA`. It removes only records whose people are all demo/test accounts
+   (`@certibuy.test`); anything a real customer took part in, and everything linked to it, is kept
+   (`planDemoReset`). Ledger triggers allow these deletes only inside the reset's transaction
+   (`app.demo_reset`). Settings, catalogue, hubs and accounts stay; the demo clock resets and liquidity is
+   recalculated. Stored files are removed best-effort after the commit.
+3. End-to-end suites live in `e2e/` (`corepack pnpm e2e`, app on port 3100, `.env.local` for certibuy-dev).
+   They are not part of GitHub CI because they need the Supabase project and secrets.

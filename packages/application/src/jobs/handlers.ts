@@ -43,6 +43,7 @@ import { z } from "zod";
 import type { Actor } from "../actor";
 import type { AppContext } from "../context";
 import { releaseReservation } from "../listing";
+import { resetDemoData } from "./demo-reset";
 import { runPayoutAttempt } from "../money/payouts";
 import { defineHandler, type AnyHandler } from "../registry";
 import { loadSettings } from "../settings";
@@ -424,8 +425,67 @@ async function stepOffers(ctx: JobContext, s: Settings, day: string, counts: Dai
       }
     });
   }
+
+  // Accepted offers not handed over by their deadline (acceptance + offer_expiry_days) close the
+  // deal: the offer expires, live bookings are cancelled and the seller is told.
+  const lapsed = await ctx.db.offer.findMany({
+    where: {
+      status: "accepted",
+      expires_at: { lt: fromIsoDate(day) },
+      submission: { status: { in: PRE_HANDOVER }, device: { is: null } },
+    },
+    include: { submission: { include: { device_model: true } } },
+  });
+  for (const o of lapsed) {
+    if (!offerExpired(toIsoDate(o.expires_at), day)) continue;
+    await ctx.db.$transaction(async (tx) => {
+      const moved = await tx.offer.updateMany({
+        where: { id: o.id, status: "accepted" },
+        data: { status: "expired" },
+      });
+      if (!moved.count) return;
+      const closed = await tx.submission.updateMany({
+        where: { id: o.submission_id, status: { in: PRE_HANDOVER } },
+        data: { status: "abandoned" },
+      });
+      if (!closed.count) return;
+      await tx.booking.updateMany({
+        where: { submission_id: o.submission_id, status: "booked" },
+        data: { status: "cancelled" },
+      });
+      counts.expiredOffers++;
+      const sub = o.submission;
+      await notify(
+        tx,
+        [
+          {
+            userId: sub.seller_id,
+            event: "deal_abandoned",
+            title: "Your accepted offer expired",
+            body: `Your ${deviceName(sub.device_model)} wasn't handed over by ${toIsoDate(o.expires_at)}. Start a new valuation for a fresh price.`,
+            link: `/seller/deals/${sub.id}`,
+          },
+        ],
+        ctx.env.appPublicUrl,
+      );
+      await logActivity(tx, {
+        actor: null,
+        text: `Accepted offer expired on ${toIsoDate(o.expires_at)} without handover; deal closed.`,
+        entity: "submission",
+        entityId: sub.id,
+        businessDate: day,
+      });
+    });
+  }
   void s;
 }
+
+const PRE_HANDOVER: ("offer_accepted" | "scheduled" | "inspected" | "accepted")[] = [
+  "offer_accepted",
+  "scheduled",
+  "inspected",
+  "accepted",
+];
 
 /** Step 6 — missed hub bookings become no-shows; the seller can book again. */
 async function stepNoShows(ctx: JobContext, day: string, counts: DailyCountsT) {
@@ -827,6 +887,7 @@ export const getJobsBoard = defineHandler({
       simDayOffset: s.sim_day_offset,
       demoMode: s.demo_mode,
       demoToolsEnabled: ctx.env.demoToolsEnabled,
+      isPlatformAdmin: ctx.actor.isPlatformAdmin,
       simulatePayoutFailure: s.simulate_payout_failure,
       dailyRanToday: runs.some(
         (r) => r.job === "daily" && toIsoDate(r.business_date) === day && r.status === "done",
@@ -933,4 +994,5 @@ export const jobCommands: Record<string, AnyHandler> = {
   expireCheckoutHolds: expireCheckoutHoldsCommand,
   retryPayout,
   markNotificationsRead,
+  resetDemoData,
 };

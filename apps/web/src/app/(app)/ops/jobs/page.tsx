@@ -4,6 +4,7 @@ import { formatInr } from "@certibuy/domain";
 import Link from "next/link";
 import type { z } from "zod";
 import { formatDate, StatusChip } from "@/components/common/ui";
+import DemoResetPanel from "@/components/ops/DemoResetPanel";
 import JobsPanel from "@/components/ops/JobsPanel";
 import OpsCommandButton from "@/components/ops/OpsCommandButton";
 import { loadView } from "@/server/views";
@@ -31,6 +32,7 @@ export default async function JobsPage() {
         simulatePayoutFailure={b.simulatePayoutFailure}
         pendingEmails={b.pendingEmails}
       />
+      {b.demoMode && b.demoToolsEnabled && b.isPlatformAdmin && <DemoResetPanel />}
 
       {b.heldPayouts.length > 0 && (
         <div className="surface panel stack">

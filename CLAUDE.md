@@ -49,7 +49,7 @@ packages/
   integrations/                ports + simulated adapters (payments, payouts, courier, grading, imei, mail)
                                · supabase/ (auth session, storage)
 supabase/config.toml           local Supabase CLI stack
-e2e/                           Playwright money-path tests
+e2e/                           end-to-end suites against the running app + certibuy-dev (`pnpm e2e`)
 docs/                          the documentation set (see map below)
 ```
 
@@ -83,6 +83,7 @@ pnpm dev           # Next.js app (UI + API routes)
 pnpm build         # production build (must pass before finishing any task)
 pnpm lint
 pnpm test          # domain + contract tests
+pnpm e2e           # end-to-end suites (app running on :3100; ends with a demo reset)
 ```
 
 Verification rules for any change:
@@ -114,7 +115,7 @@ Verification rules for any change:
 | Change what a buyer sees about an order | the order read-model projection in `packages/application/views/`, not the component |
 | Add a hub | Ops → Hubs (`Hub` record with slots and daily capacity) |
 | Reproduce a week of ageing | Ops → Demo: business clock `+7` (runs the daily job) |
-| Reset the demo | Ops → Demo: Reset demo data (`seedDemoData`) |
+| Reset the demo | Ops → Jobs: Reset demo data (`resetDemoData`; platform admin, typed confirmation, demo/test accounts only) |
 
 ## 8. Traps that have bitten before
 
