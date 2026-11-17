@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 import DeniedNotice from "./DeniedNotice";
 import ModeSwitch from "./ModeSwitch";
+import NotificationBell from "./NotificationBell";
 
 type NavItem = { href: string; label: string };
 
@@ -66,7 +67,7 @@ export default function AppShell(props: {
               {props.demoMode && <span className="sr-only"> (demo clock)</span>}
             </span>
             {me.appRole === "customer" && <ModeSwitch />}
-            <Link href="/notifications">Notifications</Link>
+            <NotificationBell />
             <Link href="/profile">{me.fullName || me.email || "Profile"}</Link>
             <form action="/auth/signout" method="post">
               <button type="submit" className="link-button">

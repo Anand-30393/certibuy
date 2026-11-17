@@ -21,3 +21,13 @@ export interface PayoutRail {
     simulateFailure: boolean;
   }): Promise<{ ok: true; reference: string } | { ok: false; reason: string }>;
 }
+
+/** Transactional email. Simulated in the capstone: messages are recorded, never delivered. */
+export interface MailPort {
+  readonly mode: "simulated" | "live";
+  send(message: {
+    to: string;
+    subject: string;
+    body: string;
+  }): Promise<{ ok: true } | { ok: false; reason: string }>;
+}

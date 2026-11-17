@@ -48,3 +48,19 @@ shared write helpers. No Next.js or Supabase imports; external effects come in t
 6. Reserving a listing increments `reserved_days` by 1 (the daily job refines held days in Phase 6).
 7. Escrow release, settlement and payout runs for delivered orders arrive with the daily job in Phase 6; for a
    replaced order, settlement must use the replacement device.
+
+## Phase 6 implementation assumptions (jobs, automation, notifications)
+
+1. Each daily-job step writes in small transactions guarded by conditional updates (`where status = …`) and
+   unique indexes, so a rerun or two overlapping runs never move money or send a reminder twice; a run is
+   marked `running` in `job_runs` and a second start within 10 minutes is refused.
+2. The ladder only steps down (relisting resets to step 0), so moving the demo clock back never raises prices.
+3. Held days for a reserved listing never decrease: `max(current, today − paid_at + 1)`.
+4. The payout run makes one attempt per payable payout per run; a failed payout stays on hold until an ops retry.
+5. A missed booking becomes `no_show` and the deal returns to "book a hub slot" so the seller can rebook.
+6. Liquidity "day-45 returns" = the model's listings that reached review or liquidation; demand is the documented
+   proxy (F17). Fewer than 3 sales in 8 weeks → cold start.
+7. Email is simulated: `notify()` queues outbox rows, delivered after each command, by the daily job and from
+   Ops → Jobs; nothing leaves the system. Ops → Mail log shows every message.
+8. Demo controls (advance clock, reset clock, payout-failure switch) require `demo_mode` and
+   `DEMO_TOOLS_ENABLED=true`. An optional cron endpoint runs the daily job only when `CRON_SECRET` is set.

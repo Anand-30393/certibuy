@@ -24,7 +24,13 @@ import {
   nextStepFor,
   offerAmounts,
   offerExpiry,
+  escrowReleasable,
+  heldDays,
+  isNoShow,
+  ladderAdvances,
   normaliseIndianMobile,
+  offerExpired,
+  reminderDue,
   orderTotal,
   partitionCart,
   pickReplacement,
@@ -451,4 +457,33 @@ run("cart-replacement.json", ({ input, expected }) => {
   expect(pickReplacement(input.original, input.candidates)?.listingId ?? null).toBe(
     expected.listingId,
   );
+});
+
+run("jobs.json", ({ input, expected }) => {
+  switch (input.fn) {
+    case "escrowReleasable":
+      return expect(escrowReleasable(input)).toBe(expected.result);
+    case "offerExpired":
+      return expect(input.todays.map((d: string) => offerExpired(input.expiresAt, d))).toEqual(
+        expected.results,
+      );
+    case "isNoShow":
+      return expect(
+        input.bookings.map((b: { status: string; date: string }) => isNoShow(b, input.today)),
+      ).toEqual(expected.results);
+    case "reminderDue":
+      return expect(
+        input.todays.map((d: string) => reminderDue(input.deadline, d, input.windowDays)),
+      ).toEqual(expected.results);
+    case "heldDays":
+      return expect(input.cases.map((c: [number, string, string]) => heldDays(...c))).toEqual(
+        expected.results,
+      );
+    case "ladderAdvances":
+      return expect(input.cases.map((c: [number, number]) => ladderAdvances(...c))).toEqual(
+        expected.results,
+      );
+    default:
+      throw new Error(`Unhandled fn ${input.fn}`);
+  }
 });

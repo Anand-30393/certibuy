@@ -1,5 +1,5 @@
 // POST /api/v1/commands/<name> — the only way money or status changes (docs/api.md.txt).
-import { commands, dispatch } from "@certibuy/application";
+import { commands, dispatch, processOutbox } from "@certibuy/application";
 import { buildContext } from "@/server/context";
 import { errorResponse, isSameOrigin, json } from "@/server/http";
 
@@ -10,7 +10,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ nam
   try {
     const { name } = await params;
     const body: unknown = await request.json().catch(() => ({}));
-    return json(await dispatch(commands, name, await buildContext(), body));
+    const ctx = await buildContext();
+    const result = await dispatch(commands, name, ctx, body);
+    // Deliver any email this command queued (simulated). Best effort: never fails the command.
+    await processOutbox(ctx).catch(() => 0);
+    return json(result);
   } catch (e) {
     return errorResponse(e);
   }

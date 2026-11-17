@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@certibuy/db";
-import type { PayoutRail, StoragePort } from "@certibuy/integrations";
+import type { MailPort, PayoutRail, StoragePort } from "@certibuy/integrations";
 import type { Actor } from "./actor";
 
 /** Everything a command, view or job receives. The clock is passed in, never read inside. */
@@ -9,6 +9,7 @@ export interface AppContext {
   now: Date;
   storage: StoragePort;
   payouts: PayoutRail;
+  mail: MailPort;
   env: {
     requireStaffMfa: boolean;
     demoToolsEnabled: boolean;

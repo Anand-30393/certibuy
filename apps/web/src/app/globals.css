@@ -653,3 +653,68 @@ label.pill {
   align-items: center;
   gap: 0.375rem;
 }
+
+/* ---------- Phase 6: bell, mail log ---------- */
+.bell {
+  position: relative;
+}
+
+.badge {
+  display: inline-block;
+  min-width: 1.25rem;
+  margin-left: 0.25rem;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background: hsl(var(--destructive));
+  color: #fff;
+  font-size: 0.75rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.bell-menu {
+  position: absolute;
+  right: 0;
+  top: 2rem;
+  z-index: 20;
+  width: min(22rem, 90vw);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bell-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.bell-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  width: 100%;
+  padding: 0.5rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bell-item.unread,
+.unread-row {
+  border-left: 3px solid hsl(var(--primary));
+}
+
+.mail-body {
+  white-space: pre-wrap;
+  font-family: inherit;
+  margin: 0;
+  color: hsl(var(--muted-foreground));
+}

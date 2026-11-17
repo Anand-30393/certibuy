@@ -14,6 +14,12 @@ export default function OpsHome() {
           <Link href="/ops/returns" className="button">
             Returns to resolve
           </Link>
+          <Link href="/ops/jobs" className="button">
+            Jobs and demo clock
+          </Link>
+          <Link href="/ops/mail-log" className="button">
+            Mail log
+          </Link>
           <Link href="/hub" className="button">
             Hub queue
           </Link>

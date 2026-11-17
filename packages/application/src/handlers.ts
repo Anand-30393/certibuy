@@ -14,6 +14,7 @@ import { loadSettings } from "./settings";
 import { sellingCommands, sellingViews } from "./selling/handlers";
 import { hubCommands, hubViews } from "./hub/handlers";
 import { buyingCommands, buyingViews } from "./buying/handlers";
+import { jobCommands, jobViews } from "./jobs/handlers";
 
 /** Every external effect is simulated in the capstone build (docs/architecture.md §12). */
 export const INTEGRATION_MODES = {
@@ -80,6 +81,7 @@ export const views: Record<string, AnyHandler> = {
   ...sellingViews,
   ...hubViews,
   ...buyingViews,
+  ...jobViews,
 };
 
 export const commands: Record<string, AnyHandler> = {
@@ -87,4 +89,5 @@ export const commands: Record<string, AnyHandler> = {
   ...sellingCommands,
   ...hubCommands,
   ...buyingCommands,
+  ...jobCommands,
 };

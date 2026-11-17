@@ -81,6 +81,7 @@ describe("dispatch", () => {
     now: new Date("2026-11-16T10:00:00Z"),
     storage: {} as AppContext["storage"],
     payouts: {} as AppContext["payouts"],
+    mail: {} as AppContext["mail"],
     env: { requireStaffMfa, demoToolsEnabled: false, appPublicUrl: "http://localhost" },
   });
   const registry = {
