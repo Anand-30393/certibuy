@@ -31,3 +31,8 @@ export interface MailPort {
     body: string;
   }): Promise<{ ok: true } | { ok: false; reason: string }>;
 }
+
+/** Staff invitations: create (or find) the auth user and return a one-time sign-in link to copy. */
+export interface AuthAdminPort {
+  inviteLink(email: string, redirectTo: string): Promise<{ link: string; existingUser: boolean }>;
+}

@@ -1,0 +1,98 @@
+{
+  "module": "operations console rules (metrics maths, stock age, Settings validation)",
+  "source": "docs/features.md.txt O-01, O-04, O-10; docs/automations.md.txt §7",
+  "cases": [
+    {
+      "id": "OPS-001",
+      "description": "Median of an odd and an even list; empty → null",
+      "status": "confirmed",
+      "input": { "fn": "median", "lists": [[9, 3, 5], [4, 10, 2, 8], []] },
+      "expected": { "results": [5, 6, null] }
+    },
+    {
+      "id": "OPS-002",
+      "description": "Percent to one decimal; zero denominator → null",
+      "status": "confirmed",
+      "input": {
+        "fn": "percent",
+        "pairs": [
+          [1, 3],
+          [3, 4],
+          [5, 0]
+        ]
+      },
+      "expected": { "results": [33.3, 75, null] }
+    },
+    {
+      "id": "OPS-003",
+      "description": "Eight weekly periods ending today, oldest first",
+      "status": "confirmed",
+      "input": { "fn": "weekStarts", "today": "2026-11-17", "count": 8 },
+      "expected": { "first": "2026-09-23", "last": "2026-11-11", "length": 8 }
+    },
+    {
+      "id": "OPS-004",
+      "description": "Week index: today and 6 days ago are the newest week; 7 days ago the one before; outside → -1",
+      "status": "confirmed",
+      "input": {
+        "fn": "weekIndex",
+        "today": "2026-11-17",
+        "count": 8,
+        "dates": [
+          "2026-11-17",
+          "2026-11-11",
+          "2026-11-10",
+          "2026-09-23",
+          "2026-09-22",
+          "2026-11-18"
+        ]
+      },
+      "expected": { "results": [7, 7, 6, 0, -1, -1] }
+    },
+    {
+      "id": "OPS-005",
+      "description": "Stock-age buckets follow the ladder days",
+      "status": "confirmed",
+      "input": { "fn": "ageBucket", "days": [0, 14, 15, 29, 30, 44, 45, 80] },
+      "expected": { "results": ["0-14", "0-14", "15-29", "15-29", "30-44", "30-44", "45+", "45+"] }
+    },
+    {
+      "id": "SET-001",
+      "description": "A valid change (commission 18%) passes",
+      "status": "confirmed",
+      "input": { "fn": "validateSettingsPatch", "patch": { "commission_pct": 18 } },
+      "expected": { "errors": 0 }
+    },
+    {
+      "id": "SET-002",
+      "description": "Ladder days out of order are refused",
+      "status": "confirmed",
+      "input": { "fn": "validateSettingsPatch", "patch": { "step2_day": 10 } },
+      "expected": { "errors": 1, "contains": "Ladder days" }
+    },
+    {
+      "id": "SET-003",
+      "description": "Liquidity weights that don't add up to 100 are refused",
+      "status": "confirmed",
+      "input": { "fn": "validateSettingsPatch", "patch": { "liq_w_days": 50 } },
+      "expected": { "errors": 1, "contains": "weights" }
+    },
+    {
+      "id": "SET-004",
+      "description": "The demo clock can't be changed from the pricing board",
+      "status": "confirmed",
+      "input": { "fn": "validateSettingsPatch", "patch": { "sim_day_offset": 5 } },
+      "expected": { "errors": 1, "contains": "can't be changed" }
+    },
+    {
+      "id": "SET-005",
+      "description": "Negative fees and inverted grade factors are refused",
+      "status": "confirmed",
+      "input": {
+        "fn": "validateSettingsPatch",
+        "patch": { "inspection_fee": -1, "grade_factor_c": 0.95 }
+      },
+      "expected": { "errors": 2 }
+    }
+  ]
+}

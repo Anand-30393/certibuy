@@ -82,6 +82,7 @@ describe("dispatch", () => {
     storage: {} as AppContext["storage"],
     payouts: {} as AppContext["payouts"],
     mail: {} as AppContext["mail"],
+    authAdmin: {} as AppContext["authAdmin"],
     env: { requireStaffMfa, demoToolsEnabled: false, appPublicUrl: "http://localhost" },
   });
   const registry = {

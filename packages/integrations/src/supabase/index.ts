@@ -48,3 +48,4 @@ export async function getAuthState(client: AuthClient): Promise<AuthState | null
 }
 
 export { createSupabaseStorage } from "./storage";
+export { createSupabaseAuthAdmin } from "./auth-admin";

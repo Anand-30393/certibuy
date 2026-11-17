@@ -11,3 +11,4 @@ export * from "./selling/offer";
 export { STEP_PATH, type WizardStep } from "./selling/queries";
 export * from "./money/payouts";
 export { processOutbox, runDailyJob, type JobContext } from "./jobs/handlers";
+export * from "./ops/handlers";

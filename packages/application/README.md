@@ -64,3 +64,26 @@ shared write helpers. No Next.js or Supabase imports; external effects come in t
    Ops → Jobs; nothing leaves the system. Ops → Mail log shows every message.
 8. Demo controls (advance clock, reset clock, payout-failure switch) require `demo_mode` and
    `DEMO_TOOLS_ENABLED=true`. An optional cron endpoint runs the daily job only when `CRON_SECRET` is set.
+
+## Phase 7 implementation assumptions (operations console)
+
+1. Every ops endpoint requires the `ops` role (platform admins pass) and, when enforced, staff MFA; customers
+   and technicians are refused before any data is read. Technicians stay scoped to their own hub.
+2. Role, hub, trust score, account flag and staff invitations are platform-admin only. Nobody can change their
+   own role. An invitation link is created with the Supabase admin API and copied by hand (no email). The
+   invited role is applied once, at the person's next sign-in, and only to a customer account.
+3. Business settings are validated as a whole (ladder order, weights total 100, battery floors, grade factors,
+   caps) and only changed fields are saved, with a version bump, a `settings_history` diff and an audit entry.
+   The demo clock and demo switches stay under Jobs.
+4. A price override can't go below the listing floor and stops the ladder until cleared. A device in
+   day-45 review can be relisted or liquidated; liquidation sells to B2B at the floor in one click and is never
+   automatic. Refurbished grade D lists with no warranty.
+5. Return and payout-hold exceptions can only close through their own flows, so the ledgers stay correct.
+   Upholding a seller's grade dispute waives a pending mismatch fee and adds 10 trust points.
+6. Finance is read-only over the append-only escrow and payout ledgers. Reconciliation flags any order whose
+   hold differs from its total, whose closing movements exceed the hold, or that has more than one release.
+   B2B proceeds are the floor prices of liquidated listings.
+7. Pausing Instant Cash withdraws it from live offers and tells those sellers. Acceptance re-checks anyway.
+8. A customer may have at most 5 open support requests. Replies notify the customer and can resolve the
+   request in the same step.
+9. Metrics use 7-day periods ending on the business date. "Inventory beyond day 45" is a current snapshot.

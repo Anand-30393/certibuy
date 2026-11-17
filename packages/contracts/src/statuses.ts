@@ -119,6 +119,37 @@ export const STATUSES = {
     dead_on_arrival: { label: "Dead on arrival", tone: "neutral" },
     buyer_changed_mind: { label: "Changed mind", tone: "neutral" },
   },
+  listing: {
+    active: { label: "Listed", tone: "success" },
+    reserved: { label: "Reserved", tone: "info" },
+    sold: { label: "Sold", tone: "success" },
+    review: { label: "Waiting for review", tone: "warning" },
+    liquidated: { label: "Liquidated", tone: "neutral" },
+    inactive: { label: "Inactive", tone: "neutral" },
+  },
+  exception_type: {
+    return: { label: "Return", tone: "info" },
+    failed_inspection: { label: "Failed inspection", tone: "warning" },
+    grade_dispute: { label: "Grade dispute", tone: "warning" },
+    payment_hold: { label: "Payout on hold", tone: "danger" },
+  },
+  case_status: {
+    open: { label: "Open", tone: "warning" },
+    resolved: { label: "Resolved", tone: "success" },
+  },
+  support_topic: {
+    selling_device: { label: "Selling a device", tone: "neutral" },
+    order_delivery: { label: "Order or delivery", tone: "neutral" },
+    return_refund: { label: "Return or refund", tone: "neutral" },
+    payments: { label: "Payments", tone: "neutral" },
+    other: { label: "Something else", tone: "neutral" },
+  },
+  invitation: {
+    pending: { label: "Invited", tone: "warning" },
+    accepted: { label: "Accepted", tone: "success" },
+    expired: { label: "Expired", tone: "neutral" },
+    revoked: { label: "Revoked", tone: "neutral" },
+  },
   integration: {
     simulated: { label: "Simulated", tone: "warning" },
     live: { label: "Live", tone: "success" },

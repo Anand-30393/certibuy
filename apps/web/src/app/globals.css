@@ -718,3 +718,94 @@ label.pill {
   margin: 0;
   color: hsl(var(--muted-foreground));
 }
+
+/* ---------- ops console (Phase 7) ---------- */
+.ops-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.ops-main {
+  min-width: 0;
+}
+
+.ops-nav {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding: 0.5rem;
+}
+
+.ops-link {
+  white-space: nowrap;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.ops-link.current {
+  background: hsl(var(--background));
+  font-weight: 600;
+  border-left: 3px solid hsl(var(--primary));
+}
+
+@media (min-width: 960px) {
+  .ops-shell {
+    grid-template-columns: 220px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .ops-nav {
+    flex-direction: column;
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.kpi {
+  padding: 1rem;
+}
+
+.kpi strong {
+  display: block;
+  font-size: 1.5rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.form-compact .field {
+  min-width: 140px;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-row a[aria-current="page"] {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.ledger-anomaly {
+  border-left: 4px solid hsl(var(--destructive));
+}

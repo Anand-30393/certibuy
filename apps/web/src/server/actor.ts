@@ -1,4 +1,4 @@
-import type { Actor } from "@certibuy/application";
+import { acceptPendingInvitation, type Actor } from "@certibuy/application";
 import { getPrisma } from "@certibuy/db";
 import { getAuthState } from "@certibuy/integrations/supabase";
 import { cache } from "react";
@@ -14,11 +14,15 @@ export const getActor = cache(async (): Promise<Actor | null> => {
 
   const db = getPrisma();
   // Role bootstrap fallback (X-02): the auth trigger normally creates the profile.
-  const profile =
+  let profile =
     (await db.profile.findUnique({ where: { id: auth.userId } })) ??
     (await db.profile.create({
       data: { id: auth.userId, email: auth.email, full_name: auth.fullName, app_role: "customer" },
     }));
+
+  if (await acceptPendingInvitation(db, profile, new Date())) {
+    profile = await db.profile.findUniqueOrThrow({ where: { id: profile.id } });
+  }
 
   return {
     userId: profile.id,

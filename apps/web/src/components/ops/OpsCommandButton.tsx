@@ -10,7 +10,7 @@ export default function OpsCommandButton(props: {
   body: Record<string, unknown>;
   label: string;
   disabled?: boolean;
-  confirm?: string;
+  confirm?: string | undefined;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);

@@ -9,7 +9,7 @@ import {
 import type { Area } from "@certibuy/contracts";
 import { getPrisma } from "@certibuy/db";
 import { createSimulatedMail, createSimulatedPayoutRail } from "@certibuy/integrations";
-import { createSupabaseStorage } from "@certibuy/integrations/supabase";
+import { createSupabaseAuthAdmin, createSupabaseStorage } from "@certibuy/integrations/supabase";
 import { redirect } from "next/navigation";
 import { getActor } from "./actor";
 
@@ -31,6 +31,7 @@ export async function buildContext(): Promise<AppContext> {
     storage: createSupabaseStorage(),
     payouts: createSimulatedPayoutRail(),
     mail: createSimulatedMail(),
+    authAdmin: createSupabaseAuthAdmin(),
     env: serverEnv(),
   };
 }

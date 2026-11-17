@@ -24,7 +24,13 @@ import {
   nextStepFor,
   offerAmounts,
   offerExpiry,
+  ageBucket,
   escrowReleasable,
+  median,
+  percent,
+  validateSettingsPatch,
+  weekIndex,
+  weekStarts,
   heldDays,
   isNoShow,
   ladderAdvances,
@@ -483,6 +489,35 @@ run("jobs.json", ({ input, expected }) => {
       return expect(input.cases.map((c: [number, number]) => ladderAdvances(...c))).toEqual(
         expected.results,
       );
+    default:
+      throw new Error(`Unhandled fn ${input.fn}`);
+  }
+});
+
+run("ops.json", ({ input, expected }) => {
+  switch (input.fn) {
+    case "median":
+      return expect(input.lists.map((l: number[]) => median(l))).toEqual(expected.results);
+    case "percent":
+      return expect(input.pairs.map((p: [number, number]) => percent(...p))).toEqual(
+        expected.results,
+      );
+    case "weekStarts": {
+      const w = weekStarts(input.today, input.count);
+      return expect({ first: w[0], last: w[w.length - 1], length: w.length }).toEqual(expected);
+    }
+    case "weekIndex":
+      return expect(input.dates.map((d: string) => weekIndex(d, input.today, input.count))).toEqual(
+        expected.results,
+      );
+    case "ageBucket":
+      return expect(input.days.map((d: number) => ageBucket(d, S))).toEqual(expected.results);
+    case "validateSettingsPatch": {
+      const errors = validateSettingsPatch(S, input.patch);
+      expect(errors.length).toBe(expected.errors);
+      if (expected.contains) expect(errors.join(" ")).toContain(expected.contains);
+      return;
+    }
     default:
       throw new Error(`Unhandled fn ${input.fn}`);
   }
