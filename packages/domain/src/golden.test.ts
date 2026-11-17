@@ -24,7 +24,11 @@ import {
   nextStepFor,
   offerAmounts,
   offerExpiry,
+  normaliseIndianMobile,
   orderTotal,
+  partitionCart,
+  pickReplacement,
+  replacementAllowed,
   payoutPlan,
   planListing,
   promoteBalance,
@@ -424,4 +428,27 @@ run("liquidity.json", ({ input, expected }) => {
         }
       : {}),
   }).toMatchObject(expected);
+});
+
+run("cart-replacement.json", ({ input, expected }) => {
+  if (input.lines) {
+    const r = partitionCart(input.lines, input.availability);
+    return expect({
+      purchasable: r.purchasable.map((l) => l.listingId),
+      removed: r.removed.map((l) => l.listingId),
+    }).toEqual(expected);
+  }
+  if (input.phones) {
+    return expect(input.phones.map(normaliseIndianMobile)).toEqual(expected.normalised);
+  }
+  if (input.replacementDeviceIds) {
+    return expect(
+      input.replacementDeviceIds.map((id: string | null) =>
+        replacementAllowed({ replacementDeviceId: id }),
+      ),
+    ).toEqual(expected.allowed);
+  }
+  expect(pickReplacement(input.original, input.candidates)?.listingId ?? null).toBe(
+    expected.listingId,
+  );
 });

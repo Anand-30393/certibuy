@@ -12,6 +12,8 @@ function navFor(me: Me): NavItem[] {
   const customer = [
     { href: "/seller", label: "Sell" },
     { href: "/shop", label: "Shop" },
+    { href: "/shop/orders", label: "Orders" },
+    { href: "/shop/cart", label: "Cart" },
     { href: "/help", label: "Help" },
   ];
   const hub = { href: "/hub", label: "Hub" };

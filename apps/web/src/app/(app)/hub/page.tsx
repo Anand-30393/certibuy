@@ -57,6 +57,23 @@ export default async function HubQueuePage(props: {
           </Link>
         ))}
       </nav>
+      {q.returns.length > 0 && (
+        <div className="surface panel stack">
+          <h2>Return re-inspections</h2>
+          <ul className="list">
+            {q.returns.map((r) => (
+              <li key={r.returnId} className="list-row">
+                <span>
+                  {r.device} · <StatusChip group="return_reason" value={r.reason} />
+                </span>
+                <Link href={`/hub/returns/${r.returnId}`} className="button">
+                  Re-inspect
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {q.jobs.length === 0 ? (
         <EmptyPanel title={`No bookings for ${formatDate(q.date)}`}>
           <p>Pick another day above.</p>

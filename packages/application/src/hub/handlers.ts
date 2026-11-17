@@ -37,6 +37,7 @@ import { runPayoutAttempt } from "../money/payouts";
 import { assertHubAccess, assertOwner, canSeeAll } from "../policies";
 import { defineHandler, type AnyHandler } from "../registry";
 import { buildOffer } from "../selling/offer";
+import { hubReturnQueue } from "../buying/handlers";
 import { exposureFor, liquidityFor, STEP_PATH, today } from "../selling/queries";
 import { loadSettings } from "../settings";
 import { logActivity, notify, type Tx } from "../support";
@@ -215,6 +216,7 @@ export const getHubQueue = defineHandler({
       today: day,
       date,
       days: [0, 1, 2, 3, 4, 5].map((n) => addDays(day, n)),
+      returns: hub ? await hubReturnQueue(ctx.db, hub.id) : [],
       jobs: bookings.map((b) => ({
         submissionId: b.submission_id,
         bookingId: b.id,

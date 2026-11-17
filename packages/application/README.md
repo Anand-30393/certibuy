@@ -35,3 +35,16 @@ shared write helpers. No Next.js or Supabase imports; external effects come in t
 6. Acquisition cost = the agreed price (Instant Cash amount or guaranteed price).
 7. The counter payout (Instant Cash in full, or the Sell For More advance) is attempted through the simulated rail
    right after the handover commits; a failure leaves custody intact for the payout run to retry.
+
+## Phase 5 implementation assumptions (buyer journey)
+
+1. The cart is stored in the buyer's browser; the server re-validates every line (availability and price) on
+   every read and at checkout. Each line is reserved in its own transaction with a conditional update.
+2. A declined (simulated) payment writes nothing for any line of the checkout.
+3. Buyer gallery photos are the seller's guided shots of the device, minus the IMEI/serial label shots.
+4. Shipping is a simulated courier advanced by ops; in demo mode the buyer can advance their own shipment.
+   Delivery marks the listing `sold` and starts the return window; dispatch marks the device `shipped`.
+5. A return is re-inspected at the hub that holds custody of the device; ops may resolve before re-inspection.
+6. Reserving a listing increments `reserved_days` by 1 (the daily job refines held days in Phase 6).
+7. Escrow release, settlement and payout runs for delivered orders arrive with the daily job in Phase 6; for a
+   replaced order, settlement must use the replacement device.

@@ -124,3 +124,40 @@ export function resolveReturn(
 export function incrementReturnCounters(counts: { device: number; buyer: number }) {
   return { device: counts.device + 1, buyer: counts.buyer + 1 };
 }
+
+// --- DOA replacement (open item 8, approved 17 November 2026) ----------------------------------
+
+export interface ReplacementCandidate {
+  listingId: string;
+  deviceModelId: string;
+  grade: "A" | "B" | "C" | "D";
+  price: number;
+  status: string;
+}
+
+const GRADE_ORDER = ["A", "B", "C", "D"] as const;
+
+/**
+ * Pick a replacement unit: same model (and storage — one DeviceModel row), same grade or better,
+ * currently listed. Default is the cheapest; null means no replacement can be offered and the
+ * return must be resolved as "DOA confirmed" (full refund) instead.
+ */
+export function pickReplacement(
+  original: { deviceModelId: string; grade: "A" | "B" | "C" | "D" },
+  candidates: readonly ReplacementCandidate[],
+): ReplacementCandidate | null {
+  const limit = GRADE_ORDER.indexOf(original.grade);
+  const eligible = candidates.filter(
+    (c) =>
+      c.status === "active" &&
+      c.deviceModelId === original.deviceModelId &&
+      GRADE_ORDER.indexOf(c.grade) <= limit,
+  );
+  eligible.sort((a, b) => a.price - b.price || a.listingId.localeCompare(b.listingId));
+  return eligible[0] ?? null;
+}
+
+/** One replacement per order: a second DOA can only be refunded (or resolved as shipped). */
+export function replacementAllowed(order: { replacementDeviceId: string | null }): boolean {
+  return order.replacementDeviceId === null;
+}

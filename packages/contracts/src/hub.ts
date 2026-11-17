@@ -116,6 +116,14 @@ export const HubQueueView = z.object({
   date: z.string(),
   days: z.array(z.string()),
   jobs: z.array(HubJobRow),
+  returns: z.array(
+    z.object({
+      returnId: z.string(),
+      device: z.string(),
+      reason: z.string(),
+      raisedOn: z.string(),
+    }),
+  ),
 });
 
 export const HubJobView = z.object({

@@ -1,0 +1,160 @@
+{
+  "module": "multi-device cart and DOA replacement",
+  "source": "docs/architecture.md §20 (Phase 5 decisions approved 17 November 2026); docs/api.md.txt resolveReturn",
+  "rules": {
+    "cart": "Each device is unique (quantity 1). Each cart line becomes its own order. Unavailable devices are removed before payment and never charged.",
+    "replacement": "Same model, same grade or better, currently listed; cheapest by default; none → resolve as DOA confirmed. One replacement per order. No price adjustment."
+  },
+  "cases": [
+    {
+      "id": "CRT-001",
+      "description": "Two available devices → two separate orders",
+      "status": "confirmed",
+      "input": {
+        "lines": [
+          { "listingId": "L1", "warrantyAddon": false },
+          { "listingId": "L2", "warrantyAddon": true }
+        ],
+        "availability": [
+          { "listingId": "L1", "status": "active", "available": true },
+          { "listingId": "L2", "status": "active", "available": true }
+        ]
+      },
+      "expected": { "purchasable": ["L1", "L2"], "removed": [] }
+    },
+    {
+      "id": "CRT-002",
+      "description": "A device reserved by someone else is removed; the rest proceed",
+      "status": "confirmed",
+      "input": {
+        "lines": [
+          { "listingId": "L1", "warrantyAddon": false },
+          { "listingId": "L2", "warrantyAddon": false }
+        ],
+        "availability": [
+          { "listingId": "L1", "status": "reserved", "available": false },
+          { "listingId": "L2", "status": "active", "available": true }
+        ]
+      },
+      "expected": { "purchasable": ["L2"], "removed": ["L1"] }
+    },
+    {
+      "id": "CRT-003",
+      "description": "The same device added twice is bought once (quantity is always 1)",
+      "status": "confirmed",
+      "input": {
+        "lines": [
+          { "listingId": "L1", "warrantyAddon": false },
+          { "listingId": "L1", "warrantyAddon": true }
+        ],
+        "availability": [{ "listingId": "L1", "status": "active", "available": true }]
+      },
+      "expected": { "purchasable": ["L1"], "removed": [] }
+    },
+    {
+      "id": "CRT-004",
+      "description": "Mobile numbers: +91 and 91 prefixes are normalised; invalid numbers are refused",
+      "status": "confirmed",
+      "input": {
+        "phones": ["+91 98765 43210", "919876543210", "9876543210", "12345", "5876543210"]
+      },
+      "expected": { "normalised": ["9876543210", "9876543210", "9876543210", null, null] }
+    },
+    {
+      "id": "DOA-001",
+      "description": "Replacement: cheapest listed unit of the same model at the same grade or better",
+      "status": "confirmed",
+      "input": {
+        "original": { "deviceModelId": "M1", "grade": "B" },
+        "candidates": [
+          {
+            "listingId": "A1",
+            "deviceModelId": "M1",
+            "grade": "A",
+            "price": 48000,
+            "status": "active"
+          },
+          {
+            "listingId": "B1",
+            "deviceModelId": "M1",
+            "grade": "B",
+            "price": 45000,
+            "status": "active"
+          },
+          {
+            "listingId": "C1",
+            "deviceModelId": "M1",
+            "grade": "C",
+            "price": 39000,
+            "status": "active"
+          },
+          {
+            "listingId": "X1",
+            "deviceModelId": "M2",
+            "grade": "A",
+            "price": 30000,
+            "status": "active"
+          }
+        ]
+      },
+      "expected": { "listingId": "B1" }
+    },
+    {
+      "id": "DOA-002",
+      "description": "A better grade is used when no same-grade unit is listed (no price adjustment)",
+      "status": "confirmed",
+      "input": {
+        "original": { "deviceModelId": "M1", "grade": "B" },
+        "candidates": [
+          {
+            "listingId": "A1",
+            "deviceModelId": "M1",
+            "grade": "A",
+            "price": 48000,
+            "status": "active"
+          },
+          {
+            "listingId": "B2",
+            "deviceModelId": "M1",
+            "grade": "B",
+            "price": 44000,
+            "status": "reserved"
+          }
+        ]
+      },
+      "expected": { "listingId": "A1" }
+    },
+    {
+      "id": "DOA-003",
+      "description": "No eligible unit → no replacement (resolve as DOA confirmed, full refund)",
+      "status": "confirmed",
+      "input": {
+        "original": { "deviceModelId": "M1", "grade": "A" },
+        "candidates": [
+          {
+            "listingId": "B1",
+            "deviceModelId": "M1",
+            "grade": "B",
+            "price": 45000,
+            "status": "active"
+          },
+          {
+            "listingId": "X1",
+            "deviceModelId": "M2",
+            "grade": "A",
+            "price": 30000,
+            "status": "active"
+          }
+        ]
+      },
+      "expected": { "listingId": null }
+    },
+    {
+      "id": "DOA-004",
+      "description": "Only one replacement per order",
+      "status": "confirmed",
+      "input": { "replacementDeviceIds": [null, "D9"] },
+      "expected": { "allowed": [true, false] }
+    }
+  ]
+}
