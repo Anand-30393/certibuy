@@ -115,16 +115,36 @@ export async function exposureFor(
   modelId: string,
 ): Promise<{ inventoryTotal: number; modelExposure: number }> {
   const owned = { status: { notIn: ["settled", "liquidated"] as ("settled" | "liquidated")[] } };
-  const [all, model] = await Promise.all([
+  // Instant Cash already promised but not yet handed over counts too, or many accepts could all
+  // pass the cap before any device arrives.
+  const promised = (modelFilter: { device_model_id?: string }) => ({
+    status: "accepted" as const,
+    submission: {
+      chosen_option: "instant_cash" as const,
+      status: {
+        in: ["offer_accepted", "scheduled", "inspected"] as (
+          "offer_accepted" | "scheduled" | "inspected"
+        )[],
+      },
+      ...modelFilter,
+    },
+  });
+  const [all, model, promisedAll, promisedModel] = await Promise.all([
     tx.device.aggregate({ _sum: { acquisition_cost: true }, where: owned }),
     tx.device.aggregate({
       _sum: { acquisition_cost: true },
       where: { ...owned, device_model_id: modelId },
     }),
+    tx.offer.aggregate({ _sum: { instant_cash_amount: true }, where: promised({}) }),
+    tx.offer.aggregate({
+      _sum: { instant_cash_amount: true },
+      where: promised({ device_model_id: modelId }),
+    }),
   ]);
   return {
-    inventoryTotal: all._sum.acquisition_cost ?? 0,
-    modelExposure: model._sum.acquisition_cost ?? 0,
+    inventoryTotal: (all._sum.acquisition_cost ?? 0) + (promisedAll._sum.instant_cash_amount ?? 0),
+    modelExposure:
+      (model._sum.acquisition_cost ?? 0) + (promisedModel._sum.instant_cash_amount ?? 0),
   };
 }
 

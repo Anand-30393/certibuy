@@ -67,6 +67,9 @@ const deviceName = (m: { brand: string; model: string; storage: string }) =>
 
 /** Load a counter job and enforce hub scope (staff) or ownership (seller). */
 async function loadJob(tx: Tx, actor: Actor, submissionId: string): Promise<Job> {
+  // Row lock: two submits of the same counter step (double click, retry) run one after the other,
+  // so the second sees the new status and is refused instead of writing fees or payouts twice.
+  await tx.$executeRaw`SELECT id FROM submissions WHERE id = ${submissionId} FOR UPDATE`;
   const job = await tx.submission.findUnique({ where: { id: submissionId }, include: jobInclude });
   if (!job) throw new DomainError(404, "not_found", "We couldn't find that job.");
   const booking = job.bookings[0];

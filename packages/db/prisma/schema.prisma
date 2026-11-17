@@ -679,6 +679,8 @@ model Listing {
   ladder_step     Int           @default(0)
   listed_at       DateTime      @db.Date
   reserved_days   Int           @default(0)
+  /// Business date the current reservation started (null when not reserved).
+  reserved_since  DateTime?     @db.Date
   override_price  Int?
   override_by     String?
   override_at     DateTime?     @db.Timestamptz(6)

@@ -36,7 +36,7 @@ Body: `{}` (normal run) · `{advanceDays: n}` (demo clock) · `{businessDate: "y
 
 For each listing:
 
-- **`reserved`** → do not step. Increment `reserved_days` to `max(0, today − paid_at + 1)` so held days never age the price.
+- **`reserved`** → do not step. The reservation's days are added to `reserved_days` when it ends (`today − reserved_since + 1`, never negative), so held days never age the price and a moved demo clock can't skew them.
 - **`active`** → `days_listed = today − listed_at − reserved_days`.
   - ≥ `step2_day` (30) → step 2, price = `max(floor, base × (1 − step2_pct))`, rounded to the nearest ₹10. `floor` is always the listing's `floor_price` = the model's B2B floor price.
   - ≥ `step1_day` (15) → step 1, `base × (1 − step1_pct)`.

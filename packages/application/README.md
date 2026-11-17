@@ -87,3 +87,20 @@ shared write helpers. No Next.js or Supabase imports; external effects come in t
 8. A customer may have at most 5 open support requests. Replies notify the customer and can resolve the
    request in the same step.
 9. Metrics use 7-day periods ending on the business date. "Inventory beyond day 45" is a current snapshot.
+
+## Phase 8 hardening (fixes from the end-to-end review)
+
+1. A payout attempt is claimed (conditional update on the attempt count) before the rail is called, and a
+   paid or not-yet-due payout is refused first, so a counter payout, the daily job and an ops retry racing
+   on the same row move money once.
+2. `runDailyJobs` refuses a future business date (catch-up for past days is still allowed); only the demo
+   clock moves time forward.
+3. A settled order (escrow released) can't be returned, even if the demo clock is moved back into its window,
+   and `resolveReturn` refuses an order whose payment is no longer in escrow.
+4. Reservations record `reserved_since`; the reserved days are added when a reservation ends, so repeated
+   reservations accumulate and the demo-clock offset can't skew them. Checkout reserves only at the price
+   it read.
+5. Cancelling an order moves an unpaid Sell For More balance back to `due` (paid payouts are never reversed).
+6. Instant Cash caps count Instant Cash already accepted but not yet handed over.
+7. Concurrent resolves of the same return are serialised (order locked before the return is read); counter
+   steps lock their submission row; liquidation uses conditional writes so a checkout in between wins.

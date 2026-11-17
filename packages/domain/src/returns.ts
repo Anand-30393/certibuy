@@ -30,7 +30,12 @@ export function assertCanRaiseReturn(input: {
   today: IsoDate;
   hasOpenReturn: boolean;
 }): void {
-  if (input.orderStatus !== "delivered" && input.orderStatus !== "settled") {
+  // A settled order has had its escrow released, so its window is over even if the business
+  // clock was moved back afterwards (a refund would then pay out twice).
+  if (input.orderStatus === "settled") {
+    throw new DomainError(409, "window_closed", "The return window for this order has closed.");
+  }
+  if (input.orderStatus !== "delivered") {
     throw new DomainError(
       409,
       "not_delivered",

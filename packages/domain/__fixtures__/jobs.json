@@ -98,16 +98,17 @@
     },
     {
       "id": "JOB-008",
-      "description": "Held days for a reserved listing never decrease",
+      "description": "Reserved days accumulate across reservations; a clock moved back never subtracts",
       "status": "confirmed",
       "input": {
         "fn": "heldDays",
         "cases": [
           [0, "2026-11-20", "2026-11-22"],
-          [5, "2026-11-20", "2026-11-22"]
+          [5, "2026-11-20", "2026-11-22"],
+          [2, "2026-11-22", "2026-11-20"]
         ]
       },
-      "expected": { "results": [3, 5] }
+      "expected": { "results": [3, 8, 3] }
     },
     {
       "id": "JOB-009",

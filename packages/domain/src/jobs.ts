@@ -37,11 +37,11 @@ export function reminderDue(deadline: IsoDate, today: IsoDate, windowDays: numbe
 }
 
 /**
- * Step 1: days a reserved listing has been held. Never decreases, so days from an earlier
- * reservation are kept: max(current, today − paid_at + 1).
+ * Reserved days after a reservation ends: the days already held plus this reservation's days
+ * (reserved day and release day both count). A clock moved back never makes it negative.
  */
-export function heldDays(current: number, paidAt: IsoDate, today: IsoDate): number {
-  return Math.max(current, diffDays(paidAt, today) + 1);
+export function heldDays(current: number, reservedSince: IsoDate, today: IsoDate): number {
+  return current + Math.max(0, diffDays(reservedSince, today)) + 1;
 }
 
 /** Step 1: the ladder only ever steps down; a relisted device starts again at step 0. */

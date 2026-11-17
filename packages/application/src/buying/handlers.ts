@@ -56,6 +56,7 @@ import { z } from "zod";
 import type { Actor } from "../actor";
 import { AccessDenied } from "../actor";
 import { assertHubAccess, canSeeAll } from "../policies";
+import { releaseReservation, reserveListing } from "../listing";
 import { defineHandler, type AnyHandler } from "../registry";
 import { storedPhotos, today } from "../selling/queries";
 import { loadSettings } from "../settings";
@@ -379,11 +380,8 @@ export const placeOrders = defineHandler({
     const orders: { orderId: string; listingId: string; total: number }[] = [];
     for (const p of priced) {
       const created = await ctx.db.$transaction(async (tx) => {
-        const reserved = await tx.listing.updateMany({
-          where: { id: p.listing.id, status: "active" },
-          data: { status: "reserved", reserved_days: { increment: 1 } },
-        });
-        if (reserved.count === 0) return null; // taken in the meantime: not charged
+        // Taken in the meantime, or repriced since it was read: not charged.
+        if (!(await reserveListing(tx, p.listing, day))) return null;
         const order = await tx.order.create({
           data: {
             listing_id: p.listing.id,
@@ -715,10 +713,18 @@ export const cancelOrder = defineHandler({
           ...(r.escrowTx ? { refund_amount: r.refund, refunded_at: ctx.now } : {}),
         },
       });
-      // Back on the shelf with its reserved days kept; seller payouts are never reversed.
-      await tx.listing.updateMany({
-        where: { id: o.listing_id, status: "reserved" },
-        data: { status: "active" },
+      // Back on the shelf with its reserved days kept. Paid seller payouts are never reversed, but
+      // a Sell For More balance the buyer's payment made payable and that isn't paid yet goes back
+      // to waiting for a sale or day 21 (D4).
+      await releaseReservation(tx, o.listing_id, today(ctx, s));
+      await tx.payout.updateMany({
+        where: {
+          device_id: o.device_id,
+          type: "balance",
+          status: { in: ["pending", "approved"] },
+          trigger: "buyer_paid_escrow",
+        },
+        data: { status: "due", trigger: null },
       });
       await tx.device.update({ where: { id: o.device_id }, data: { status: "listed" } });
       await logActivity(tx, {
@@ -1114,11 +1120,25 @@ export const resolveReturn = defineHandler({
     return ctx.db.$transaction(async (tx) => {
       const s = await loadSettings(tx);
       const day = today(ctx, s);
+      // Lock the order first, then read the return: a second concurrent resolve waits here and then
+      // sees "resolved" (it must never allocate a second replacement or refund).
+      const head = await tx.returnRequest.findUnique({
+        where: { id: input.returnId },
+        select: { order_id: true },
+      });
+      if (!head) throw new DomainError(404, "not_found", "We couldn't find that return.");
+      await lockOrder(tx, head.order_id);
       const r = await loadReturn(tx, input.returnId);
       if (r.status === "resolved")
         throw new DomainError(409, "already_resolved", "This return is already resolved.");
-      await lockOrder(tx, r.order_id);
       const order = r.order;
+      if (order.escrow_status !== "hold" && order.escrow_status !== "held_replacement") {
+        throw new DomainError(
+          409,
+          "escrow_closed",
+          "The payment for this order is no longer in escrow.",
+        );
+      }
       const res = domainResolveReturn(
         { reason: r.reason, outcome: input.outcome as ReturnOutcome, total: order.total },
         s,

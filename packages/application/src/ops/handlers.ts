@@ -792,9 +792,21 @@ export const liquidateDevice = defineHandler({
       if (listing && listing.status === "reserved")
         throw new DomainError(409, "reserved", "A buyer has reserved this device.");
       const proceeds = listing?.floor_price ?? d.device_model.b2b_floor_price;
-      await tx.device.update({ where: { id: d.id }, data: { status: "liquidated" } });
-      if (listing)
-        await tx.listing.update({ where: { id: listing.id }, data: { status: "liquidated" } });
+      // Conditional writes: a checkout that reserved the listing in the meantime wins.
+      if (listing) {
+        const moved = await tx.listing.updateMany({
+          where: { id: listing.id, status: { in: ["active", "review", "inactive"] } },
+          data: { status: "liquidated" },
+        });
+        if (!moved.count)
+          throw new DomainError(409, "reserved", "A buyer has just reserved this device.");
+      }
+      const dmoved = await tx.device.updateMany({
+        where: { id: d.id, status: { in: ["listed", "day45_review", "in_refurbishment"] } },
+        data: { status: "liquidated" },
+      });
+      if (!dmoved.count)
+        throw new DomainError(409, "not_liquidatable", "This device can't be liquidated now.");
       await logActivity(tx, {
         actor: ctx.actor,
         text: `Liquidated ${deviceName(d.device_model)} (${d.tag_id}) to B2B at ${formatInr(proceeds)}.`,

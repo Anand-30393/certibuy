@@ -176,13 +176,13 @@ submission_id, seller_id, device_model_id, colour, imei, tag_id, final_grade (`A
 
 ### `Listing`
 
-device_id, base_price, current_price, floor_price, ladder_step (0–2), listed_at (`yyyy-mm-dd`), reserved_days (number), override_price, override_by, override_at, warranty_months, status (`active`\|`reserved`\|`sold`\|`review`\|`liquidated`\|`inactive`).
+device_id, base_price, current_price, floor_price, ladder_step (0–2), listed_at (`yyyy-mm-dd`), reserved_days (number), reserved_since (`yyyy-mm-dd`, business date the current reservation started; null when not reserved), override_price, override_by, override_at, warranty_months, status (`active`\|`reserved`\|`sold`\|`review`\|`liquidated`\|`inactive`).
 
 `days_listed = today − listed_at − reserved_days`. Step 1 from day 15, step 2 from day 30, review from day 45. An `override_price`, when set, stops the ladder.
 
 - `floor_price` is **always** copied from `device_model.b2b_floor_price` when the listing is created — first listing and relist alike (one definition; replaces the reference build's acquisition-cost floor, audit F10). The ladder never prices below it; at day 45 the expected outcome is B2B liquidation at this price.
 - `warranty_months = 0` for a grade-D listing. Grade D is never listed at handover: it goes to refurbishment and is listed with no warranty when ops marks it refurbished (audit F9). The warranty add-on is never offered on a 0-month listing.
-- A cancelled order puts its listing back to `active` with `reserved_days` kept.
+- A cancelled or expired order puts its listing back to `active`, adding that reservation's days (`today − reserved_since + 1`) to `reserved_days`.
 
 ## 7. Buying
 

@@ -28,7 +28,6 @@ import {
   DomainError,
   escrowReleasable,
   formatInr,
-  heldDays,
   inLaunchWindow,
   isNoShow,
   istDate,
@@ -43,6 +42,7 @@ import {
 import { z } from "zod";
 import type { Actor } from "../actor";
 import type { AppContext } from "../context";
+import { releaseReservation } from "../listing";
 import { runPayoutAttempt } from "../money/payouts";
 import { defineHandler, type AnyHandler } from "../registry";
 import { loadSettings } from "../settings";
@@ -193,16 +193,9 @@ async function stepLadder(ctx: JobContext, s: Settings, day: string, counts: Dai
   });
   const ops = await opsUserIds(ctx.db);
   for (const l of listings) {
-    if (l.status === "reserved") {
-      const paidAt = l.orders[0]?.paid_at;
-      if (!paidAt) continue;
-      const held = heldDays(l.reserved_days, businessDate(paidAt, s), day);
-      if (held !== l.reserved_days) {
-        await ctx.db.listing.update({ where: { id: l.id }, data: { reserved_days: held } });
-        counts.reservedUpdated++;
-      }
-      continue;
-    }
+    // Reserved days are added when the reservation ends (listing.ts), so a reserved listing
+    // never ages here and the business clock offset at payment time can't skew the count.
+    if (l.status === "reserved") continue;
     const days = daysListed(toIsoDate(l.listed_at), day, l.reserved_days);
     const pos = ladderPosition(
       {
@@ -322,7 +315,9 @@ async function stepPayouts(ctx: JobContext, counts: DailyCountsT) {
       const r = await runPayoutAttempt(ctx, p.id);
       if (r.status === "paid") counts.payoutsPaid++;
       else if (r.status === "failed") counts.payoutsFailed++;
-    } catch {
+    } catch (e) {
+      // Another run is already paying this one; anything else counts as a failure.
+      if (e instanceof DomainError && e.code === "payout_in_progress") continue;
       counts.payoutsFailed++; // one bad payout never stops the run
     }
   }
@@ -650,10 +645,7 @@ export async function expireCheckoutHolds(ctx: JobContext) {
       });
       if (!moved.count) return;
       domainCancelOrder({ orderStatus: "pending", total: o.total }, s);
-      await tx.listing.updateMany({
-        where: { id: o.listing_id, status: "reserved" },
-        data: { status: "active" },
-      });
+      await releaseReservation(tx, o.listing_id, day);
       await tx.device.update({ where: { id: o.device_id }, data: { status: "listed" } });
       await notify(
         tx,
@@ -695,6 +687,18 @@ export const runDailyJobs = defineHandler({
   input: RunDailyJobsInput,
   output: RunDailyJobsOutput,
   async run(ctx, input) {
+    // A catch-up run for a missed day is fine; a future date would age deals early (release
+    // escrow inside an open return window), so the demo clock is the only way forward.
+    if (input.businessDate) {
+      const s = await loadSettings(ctx.db);
+      if (input.businessDate > businessDate(ctx.now, s)) {
+        throw new DomainError(
+          400,
+          "future_date",
+          "The daily job can't run for a future date. Use the demo clock instead.",
+        );
+      }
+    }
     const r = await runDailyJob(ctx, input.businessDate);
     return { ok: true as const, done: true, ...r };
   },

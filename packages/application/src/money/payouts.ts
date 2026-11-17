@@ -1,6 +1,6 @@
 // One payout attempt through the payout rail and the domain payout state machine
 // (docs/automations.md.txt §5). Used at handover and, later, by the daily payout run.
-import { formatInr, attemptPayout, type PayoutStatus } from "@certibuy/domain";
+import { DomainError, formatInr, attemptPayout, type PayoutStatus } from "@certibuy/domain";
 import type { AppContext } from "../context";
 import { loadSettings } from "../settings";
 import { logActivity, notify } from "../support";
@@ -28,6 +28,21 @@ export async function runPayoutAttempt(
     where: { id: payoutId },
     include: { seller: { select: { payout_account: true } } },
   });
+  if (payout.status === "paid") {
+    throw new DomainError(409, "already_paid", "This payout has already been paid.");
+  }
+  if (payout.status === "due") {
+    throw new DomainError(409, "not_yet_due", "This payout isn't due yet.");
+  }
+  // Claim this attempt before touching the rail: a concurrent run (counter, daily job, ops retry)
+  // that read the same row finds the attempt count moved and stops, so money moves once.
+  const claimed = await ctx.db.payout.updateMany({
+    where: { id: payout.id, attempts: payout.attempts, status: payout.status },
+    data: { attempts: payout.attempts + 1 },
+  });
+  if (claimed.count === 0) {
+    throw new DomainError(409, "payout_in_progress", "This payout is already being processed.");
+  }
   const transfer = await ctx.payouts.transfer({
     payoutId: payout.id,
     amount: payout.amount,
