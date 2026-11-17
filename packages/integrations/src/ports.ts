@@ -9,3 +9,15 @@ export interface StoragePort {
 }
 
 export const PRIVATE_MEDIA_BUCKET = "private-media";
+
+/** Seller payout transfers (UPI/IMPS/bank in production). Simulated in the capstone. */
+export interface PayoutRail {
+  readonly mode: "simulated" | "live";
+  transfer(input: {
+    payoutId: string;
+    amount: number;
+    accountRef: string | null;
+    /** Settings.simulate_payout_failure — honoured only by the simulated rail. */
+    simulateFailure: boolean;
+  }): Promise<{ ok: true; reference: string } | { ok: false; reason: string }>;
+}

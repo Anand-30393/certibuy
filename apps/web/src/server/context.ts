@@ -8,6 +8,7 @@ import {
 } from "@certibuy/application";
 import type { Area } from "@certibuy/contracts";
 import { getPrisma } from "@certibuy/db";
+import { createSimulatedPayoutRail } from "@certibuy/integrations";
 import { createSupabaseStorage } from "@certibuy/integrations/supabase";
 import { redirect } from "next/navigation";
 import { getActor } from "./actor";
@@ -28,6 +29,7 @@ export async function buildContext(): Promise<AppContext> {
     actor: await getActor(),
     now: new Date(),
     storage: createSupabaseStorage(),
+    payouts: createSimulatedPayoutRail(),
     env: serverEnv(),
   };
 }

@@ -6,6 +6,7 @@ import type { z } from "zod";
 import { EmptyPanel, formatDate, GradeChip, Money, StatusChip } from "@/components/common/ui";
 import BookingActions from "@/components/seller/BookingActions";
 import PaymentsTable from "@/components/seller/PaymentsTable";
+import RevisedOfferDecision from "@/components/seller/RevisedOfferDecision";
 import { loadView } from "@/server/views";
 
 export default async function DealPage({ params }: { params: Promise<{ id: string }> }) {
@@ -35,6 +36,21 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         <Link href={STEP_PATH[step](sub.id)} className="button primary">
           Continue
         </Link>
+      )}
+
+      {sub.inspection?.verdict === "one_below" && sub.inspection.sellerDecision === "pending" && (
+        <RevisedOfferDecision
+          submissionId={sub.id}
+          quoted={sub.inspection.quoted}
+          revised={sub.inspection.revised}
+          finalGrade={sub.inspection.finalGrade}
+        />
+      )}
+      {sub.inspection?.finalGrade && sub.inspection.sellerDecision !== "pending" && (
+        <p className="row">
+          Counter grade <GradeChip grade={sub.inspection.finalGrade} />
+          {sub.inspection.verdict && <StatusChip group="verdict" value={sub.inspection.verdict} />}
+        </p>
       )}
 
       {o && agreed !== null && (

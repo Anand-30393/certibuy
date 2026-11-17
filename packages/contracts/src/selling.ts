@@ -242,6 +242,15 @@ export const SubmissionView = z.object({
   offer: OfferView.nullable(),
   chosenOption: PAYOUT_OPTION.nullable(),
   booking: BookingView.nullable(),
+  inspection: z
+    .object({
+      finalGrade: GRADE.nullable(),
+      verdict: z.enum(["inside", "one_below", "two_below"]).nullable(),
+      quoted: Money.nullable(),
+      revised: Money.nullable(),
+      sellerDecision: z.string().nullable(),
+    })
+    .nullable(),
   hubs: z.array(HubOptionView),
   nextStep: z.string(),
   businessDate: z.string(),

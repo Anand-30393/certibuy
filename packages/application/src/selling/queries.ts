@@ -20,6 +20,7 @@ export const submissionInclude = {
   offers: { orderBy: { version: "desc" }, take: 1 },
   grade_assessments: { where: { source: "ai" }, orderBy: { created_date: "desc" }, take: 1 },
   bookings: { orderBy: { created_date: "desc" }, take: 1, include: { hub: true } },
+  inspection_reports: { where: { type: "intake" }, orderBy: { created_date: "desc" }, take: 1 },
 } satisfies Prisma.SubmissionInclude;
 
 export type LoadedSubmission = Prisma.SubmissionGetPayload<{ include: typeof submissionInclude }>;
@@ -307,6 +308,15 @@ export async function toSubmissionView(
           date: toIsoDate(booking.date),
           slot: booking.slot,
           status: booking.status,
+        }
+      : null,
+    inspection: sub.inspection_reports[0]?.verdict
+      ? {
+          finalGrade: sub.inspection_reports[0].computed_grade,
+          verdict: sub.inspection_reports[0].verdict,
+          quoted: sub.inspection_reports[0].quoted_amount,
+          revised: sub.inspection_reports[0].revised_amount,
+          sellerDecision: sub.inspection_reports[0].seller_decision,
         }
       : null,
     hubs: step === "hub" || step === "tracker" ? await hubOptions(tx, day) : [],

@@ -132,7 +132,12 @@ export const getSellerHome = defineHandler({
     return {
       deals: subs.map((sub) => {
         const offer = sub.offers[0];
-        const step = nextStepFor({ ...sub, grade_assessments: [], bookings: [] } as never);
+        const step = nextStepFor({
+          ...sub,
+          grade_assessments: [],
+          bookings: [],
+          inspection_reports: [],
+        } as never);
         const label = NEXT[sub.status];
         return {
           id: sub.id,

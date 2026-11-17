@@ -20,3 +20,18 @@ shared write helpers. No Next.js or Supabase imports; external effects come in t
 5. Liquidity uses the model's current score, else its tier's cold-start score; exposure = acquisition cost of owned
    devices not yet settled or liquidated.
 6. An offer past its expiry is marked expired (and the deal closed) when the seller tries to accept it.
+
+## Phase 4 implementation assumptions (technician counter)
+
+1. Identity passes when the scanned IMEI matches the declared one on the last 8 digits, the scanned IMEI is not
+   in the blacklist registry (re-checked at the counter), and activation lock is off.
+2. The technician checklist has 9 items; failed count maps to the function grade (1 → B, 2 → C, 3+ → D).
+3. A grade inside (or better than) the band moves the deal straight to `accepted`; one below creates the revised
+   offer immediately (priced at the confirmed grade, High confidence); if Instant Cash is no longer available at
+   the lower grade, the revised offer is on the guaranteed price.
+4. The seller's counter decision can be recorded by the seller (own device) or by the hub's technician.
+5. A two-grade mismatch lowers the seller's trust score by 10 (the docs give no figure); the fee payout row is
+   written only when the fee was collected.
+6. Acquisition cost = the agreed price (Instant Cash amount or guaranteed price).
+7. The counter payout (Instant Cash in full, or the Sell For More advance) is attempted through the simulated rail
+   right after the handover commits; a failure leaves custody intact for the payout run to retry.

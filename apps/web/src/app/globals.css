@@ -533,3 +533,40 @@ h2 {
   flex-direction: column;
   gap: 0.5rem;
 }
+
+/* ---------- Phase 4: hub counter ---------- */
+.step-card[aria-disabled="true"] {
+  opacity: 0.6;
+}
+
+.step-card.active {
+  border-color: hsl(var(--primary));
+}
+
+.reject-panel summary {
+  cursor: pointer;
+  color: hsl(var(--destructive));
+  font-weight: 600;
+}
+
+.signature-pad {
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 3 / 1;
+  border: 1px dashed hsl(var(--border));
+  border-radius: 0.875rem;
+  background: #fff;
+  touch-action: none;
+}
+
+a.pill {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.pill[aria-current="page"] {
+  border-color: hsl(var(--primary));
+  box-shadow: inset 0 0 0 1px hsl(var(--primary));
+}

@@ -12,6 +12,7 @@ import { defineHandler, type AnyHandler } from "./registry";
 import { homeFor, mfaSatisfied } from "./policies";
 import { loadSettings } from "./settings";
 import { sellingCommands, sellingViews } from "./selling/handlers";
+import { hubCommands, hubViews } from "./hub/handlers";
 
 /** Every external effect is simulated in the capstone build (docs/architecture.md §12). */
 export const INTEGRATION_MODES = {
@@ -76,9 +77,11 @@ export const views: Record<string, AnyHandler> = {
   getWorkspaceContext,
   getMe,
   ...sellingViews,
+  ...hubViews,
 };
 
 export const commands: Record<string, AnyHandler> = {
   setActiveMode,
   ...sellingCommands,
+  ...hubCommands,
 };
